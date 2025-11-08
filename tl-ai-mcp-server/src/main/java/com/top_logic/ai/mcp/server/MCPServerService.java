@@ -22,6 +22,7 @@ import com.top_logic.basic.module.services.ServletContextService;
 import com.top_logic.ai.mcp.server.resources.ModelModulesResource;
 import com.top_logic.ai.mcp.server.resources.ModuleTypesResource;
 import com.top_logic.ai.mcp.server.resources.TypePartsResource;
+import com.top_logic.ai.mcp.server.resources.TypeUsagesResource;
 
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServer;
@@ -211,6 +212,7 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 	 * <li>{@link ModelModulesResource} - Lists available data model modules</li>
 	 * <li>{@link ModuleTypesResource} - Lists types within a specific module (dynamic resource template)</li>
 	 * <li>{@link TypePartsResource} - Lists parts within a specific type (dynamic resource template)</li>
+	 * <li>{@link TypeUsagesResource} - Finds usages of a specific type (dynamic resource template)</li>
 	 * </ul>
 	 *
 	 * @param server
@@ -225,6 +227,9 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 
 		// Register resource template for listing parts in a specific type
 		server.addResourceTemplate(TypePartsResource.createSpecification());
+
+		// Register resource template for finding usages of a specific type
+		server.addResourceTemplate(TypeUsagesResource.createSpecification());
 	}
 
 	@Override
