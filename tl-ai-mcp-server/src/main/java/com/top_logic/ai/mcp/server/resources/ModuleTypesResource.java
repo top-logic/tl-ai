@@ -6,6 +6,8 @@ package com.top_logic.ai.mcp.server.resources;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.top_logic.basic.util.ResKey;
@@ -50,6 +52,9 @@ public class ModuleTypesResource {
 
 	/** URI template for module types resource. */
 	public static final String URI_TEMPLATE = "toplogic://model/modules/{moduleName}/types";
+
+	/** Pattern for extracting module name from URI. */
+	private static final Pattern URI_PATTERN = Pattern.compile("toplogic://model/modules/([^/]+)/types");
 
 	/** Resource name template. */
 	private static final String NAME_TEMPLATE = "module-types-{moduleName}";
@@ -169,15 +174,11 @@ public class ModuleTypesResource {
 	 * @return The extracted module name.
 	 */
 	private static String extractModuleName(String uri) {
-		// URI format: toplogic://model/modules/{moduleName}/types
-		String prefix = "toplogic://model/modules/";
-		String suffix = "/types";
-
-		if (!uri.startsWith(prefix) || !uri.endsWith(suffix)) {
+		Matcher matcher = URI_PATTERN.matcher(uri);
+		if (!matcher.matches()) {
 			throw new IllegalArgumentException("Invalid module types URI: " + uri);
 		}
-
-		return uri.substring(prefix.length(), uri.length() - suffix.length());
+		return matcher.group(1);
 	}
 
 }
