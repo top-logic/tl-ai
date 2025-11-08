@@ -10,6 +10,7 @@ import jakarta.servlet.ServletException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.top_logic.ai.mcp.server.completions.ModuleNameCompletion;
 import com.top_logic.ai.mcp.server.resources.ModelModulesResource;
 import com.top_logic.ai.mcp.server.resources.ModuleTypesResource;
 import com.top_logic.ai.mcp.server.resources.TypePartsResource;
@@ -227,6 +228,7 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 	 * <li>{@link ModuleTypesResource} - Lists types within a specific module (dynamic resource template)</li>
 	 * <li>{@link TypePartsResource} - Lists parts within a specific type (dynamic resource template)</li>
 	 * <li>{@link TypeUsagesResource} - Finds usages of a specific type (dynamic resource template)</li>
+	 * <li>{@link ModuleNameCompletion} - Provides completions for module name parameters</li>
 	 * </ul>
 	 *
 	 * @param builder
@@ -244,6 +246,9 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 
 		// Register resource template for finding usages of a specific type
 		builder.resourceTemplates(TypeUsagesResource.createSpecification());
+
+		// Register completion handler for module name parameter
+		builder.completions(ModuleNameCompletion.createSpecification());
 	}
 
 	@Override

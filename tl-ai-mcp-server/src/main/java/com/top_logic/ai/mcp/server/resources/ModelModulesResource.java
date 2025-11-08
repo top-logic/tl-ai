@@ -8,7 +8,6 @@ import java.io.StringWriter;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.top_logic.basic.thread.InContext;
 import com.top_logic.basic.thread.ThreadContextManager;
 import com.top_logic.basic.util.ResKey;
 import com.top_logic.common.json.gstream.JsonWriter;
