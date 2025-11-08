@@ -8,6 +8,8 @@ import java.io.StringWriter;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.top_logic.basic.thread.InContext;
+import com.top_logic.basic.thread.ThreadContextManager;
 import com.top_logic.basic.util.ResKey;
 import com.top_logic.common.json.gstream.JsonWriter;
 import com.top_logic.model.ModelKind;
@@ -88,59 +90,62 @@ public class ModelModulesResource {
 			McpSyncServerExchange exchange,
 			McpSchema.ReadResourceRequest request) {
 
-		// Get the application model and retrieve all modules
-		TLModel model = ModelService.getApplicationModel();
-		List<TLModule> modules = model.getModules().stream()
-			.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
-			.collect(Collectors.toList());
+		// Wrap database access in system interaction context
+		return ThreadContextManager.inSystemInteraction(ModelModulesResource.class, () -> {
+			// Get the application model and retrieve all modules
+			TLModel model = ModelService.getApplicationModel();
+			List<TLModule> modules = model.getModules().stream()
+				.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
+				.collect(Collectors.toList());
 
-		// Build JSON array with module information using JsonWriter
-		StringWriter buffer = new StringWriter();
-		try (JsonWriter json = new JsonWriter(buffer)) {
-			json.setIndent("  ");
-			json.beginArray();
+			// Build JSON array with module information using JsonWriter
+			StringWriter buffer = new StringWriter();
+			try (JsonWriter json = new JsonWriter(buffer)) {
+				json.setIndent("  ");
+				json.beginArray();
 
-			for (TLModule module : modules) {
-				json.beginObject();
-				json.name("name").value(module.getName());
+				for (TLModule module : modules) {
+					json.beginObject();
+					json.name("name").value(module.getName());
 
-				// Count only non-association types (associations are implementation details)
-				long typeCount = module.getTypes().stream()
-					.filter(type -> type.getModelKind() != ModelKind.ASSOCIATION)
-					.count();
-				json.name("typeCount").value(typeCount);
+					// Count only non-association types (associations are implementation details)
+					long typeCount = module.getTypes().stream()
+						.filter(type -> type.getModelKind() != ModelKind.ASSOCIATION)
+						.count();
+					json.name("typeCount").value(typeCount);
 
-				// Get the resource key for the module (handles defaults if no annotation)
-				ResKey moduleKey = LabelVisitor.getModuleResourceKey(module);
-				Resources resources = Resources.getInstance();
+					// Get the resource key for the module (handles defaults if no annotation)
+					ResKey moduleKey = LabelVisitor.getModuleResourceKey(module);
+					Resources resources = Resources.getInstance();
 
-				// Add label from the resource key (optional)
-				String label = resources.getString(moduleKey, null);
-				if (label != null && !label.isEmpty()) {
-					json.name("label").value(label);
+					// Add label from the resource key (optional)
+					String label = resources.getString(moduleKey, null);
+					if (label != null && !label.isEmpty()) {
+						json.name("label").value(label);
+					}
+
+					// Add description from tooltip sub-key (optional)
+					ResKey tooltipKey = moduleKey.tooltip();
+					String description = resources.getString(tooltipKey, null);
+					if (description != null && !description.isEmpty()) {
+						json.name("description").value(description);
+					}
+
+					json.endObject();
 				}
 
-				// Add description from tooltip sub-key (optional)
-				ResKey tooltipKey = moduleKey.tooltip();
-				String description = resources.getString(tooltipKey, null);
-				if (description != null && !description.isEmpty()) {
-					json.name("description").value(description);
-				}
-
-				json.endObject();
+				json.endArray();
+			} catch (IOException ex) {
+				throw new RuntimeException("Failed to generate JSON: " + ex.getMessage(), ex);
 			}
 
-			json.endArray();
-		} catch (IOException ex) {
-			throw new RuntimeException("Failed to generate JSON: " + ex.getMessage(), ex);
-		}
+			McpSchema.TextResourceContents contents = new McpSchema.TextResourceContents(
+				request.uri(),
+				MIME_TYPE,
+				buffer.toString()
+			);
 
-		McpSchema.TextResourceContents contents = new McpSchema.TextResourceContents(
-			request.uri(),
-			MIME_TYPE,
-			buffer.toString()
-		);
-
-		return new McpSchema.ReadResourceResult(List.of(contents));
+			return new McpSchema.ReadResourceResult(List.of(contents));
+		});
 	}
 }
