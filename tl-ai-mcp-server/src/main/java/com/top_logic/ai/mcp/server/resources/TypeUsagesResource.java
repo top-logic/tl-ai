@@ -5,12 +5,18 @@ package com.top_logic.ai.mcp.server.resources;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.top_logic.common.json.gstream.JsonWriter;
+import com.top_logic.model.TLClass;
+import com.top_logic.model.TLObject;
 import com.top_logic.model.TLModel;
+import com.top_logic.model.TLReference;
+import com.top_logic.model.TLStructuredTypePart;
 import com.top_logic.model.TLType;
 import com.top_logic.model.util.TLModelUtil;
 import com.top_logic.util.model.ModelService;
@@ -120,30 +126,35 @@ public class TypeUsagesResource {
 			throw new IllegalArgumentException("Type not found: " + qualifiedTypeName);
 		}
 
-		// TODO: Implement real usage discovery
-		// For now, return stub data
+		// Find all usages of this type
+		List<PropertyUsage> propertyUsages = findPropertyUsages(model, type);
+		List<String> subclasses = findSubclasses(type);
 
-		// Build JSON object with stub usage information using JsonWriter
+		// Build JSON object with usage information using JsonWriter
 		StringWriter buffer = new StringWriter();
 		try (JsonWriter json = new JsonWriter(buffer)) {
 			json.setIndent("  ");
 			json.beginObject();
 
-			// Stub: Properties that use this type as value type
+			// Properties that use this type as value type
 			json.name("properties").beginArray();
-			json.beginObject();
-			json.name("owner").value("stub.module:StubClass");
-			json.name("property").value("stubProperty");
-			json.name("usage").value("value type");
-			json.endObject();
+			for (PropertyUsage usage : propertyUsages) {
+				json.beginObject();
+				json.name("owner").value(usage.ownerType);
+				json.name("property").value(usage.propertyName);
+				json.name("usage").value("value type");
+				json.endObject();
+			}
 			json.endArray();
 
-			// Stub: Classes that use this type as generalization (supertype)
+			// Classes that use this type as generalization (supertype)
 			json.name("subclasses").beginArray();
-			json.beginObject();
-			json.name("class").value("stub.module:StubSubclass");
-			json.name("usage").value("generalization");
-			json.endObject();
+			for (String subclass : subclasses) {
+				json.beginObject();
+				json.name("class").value(subclass);
+				json.name("usage").value("generalization");
+				json.endObject();
+			}
 			json.endArray();
 
 			json.endObject();
@@ -174,6 +185,88 @@ public class TypeUsagesResource {
 			throw new IllegalArgumentException("Invalid type usages URI: " + uri);
 		}
 		return matcher.group(1);
+	}
+
+	/**
+	 * Finds all properties that use the given type as their value type.
+	 *
+	 * <p>
+	 * Uses the meta-model to find all instances of TLStructuredTypePart where the 'type' reference
+	 * points to the given type.
+	 * </p>
+	 *
+	 * @param model
+	 *        The TopLogic model.
+	 * @param type
+	 *        The type to find usages for.
+	 * @return List of property usages.
+	 */
+	private static List<PropertyUsage> findPropertyUsages(TLModel model, TLType type) {
+		List<PropertyUsage> usages = new ArrayList<>();
+
+		// Find the meta-model type for TLStructuredTypePart
+		TLClass partMetaType = (TLClass) TLModelUtil.findType(model, "tl.model:TLStructuredTypePart");
+		if (partMetaType == null) {
+			return usages; // Meta-model not available
+		}
+
+		// Find the 'type' reference in TLStructuredTypePart
+		TLStructuredTypePart typeReference = partMetaType.getPart("type");
+		if (!(typeReference instanceof TLReference typeRef)) {
+			return usages; // 'type' is not a reference
+		}
+
+		// Use getReferers() to find all TLStructuredTypePart instances that reference this type
+		for (Object referer : typeRef.getReferers((TLObject) type)) {
+			if (referer instanceof TLStructuredTypePart part) {
+				String ownerTypeName = TLModelUtil.qualifiedName(part.getOwner());
+				usages.add(new PropertyUsage(ownerTypeName, part.getName()));
+			}
+		}
+
+		// Sort by owner type, then property name
+		usages.sort((u1, u2) -> {
+			int cmp = u1.ownerType.compareTo(u2.ownerType);
+			if (cmp != 0) {
+				return cmp;
+			}
+			return u1.propertyName.compareTo(u2.propertyName);
+		});
+
+		return usages;
+	}
+
+	/**
+	 * Finds all classes that use the given type as a generalization (supertype).
+	 *
+	 * @param type
+	 *        The type to find subclasses for.
+	 * @return List of qualified subclass names.
+	 */
+	private static List<String> findSubclasses(TLType type) {
+		if (!(type instanceof TLClass tlClass)) {
+			return List.of(); // Only classes can have subclasses
+		}
+
+		// Get all specializations (direct subclasses)
+		return tlClass.getSpecializations().stream()
+			.map(TLModelUtil::qualifiedName)
+			.sorted()
+			.collect(Collectors.toList());
+	}
+
+	/**
+	 * Helper class to hold property usage information.
+	 */
+	private static class PropertyUsage {
+		final String ownerType;
+
+		final String propertyName;
+
+		PropertyUsage(String ownerType, String propertyName) {
+			this.ownerType = ownerType;
+			this.propertyName = propertyName;
+		}
 	}
 
 }
