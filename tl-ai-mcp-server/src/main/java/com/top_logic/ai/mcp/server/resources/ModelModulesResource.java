@@ -3,9 +3,12 @@
  */
 package com.top_logic.ai.mcp.server.resources;
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.top_logic.common.json.gstream.JsonWriter;
 import com.top_logic.model.TLModel;
 import com.top_logic.model.TLModule;
 import com.top_logic.util.model.ModelService;
@@ -87,49 +90,30 @@ public class ModelModulesResource {
 			.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
 			.collect(Collectors.toList());
 
-		// Build JSON array with module information
-		StringBuilder json = new StringBuilder();
-		json.append("[\n");
+		// Build JSON array with module information using JsonWriter
+		StringWriter buffer = new StringWriter();
+		try (JsonWriter json = new JsonWriter(buffer)) {
+			json.setIndent("  ");
+			json.beginArray();
 
-		boolean first = true;
-		for (TLModule module : modules) {
-			if (!first) {
-				json.append(",\n");
+			for (TLModule module : modules) {
+				json.beginObject();
+				json.name("name").value(module.getName());
+				json.name("typeCount").value(module.getTypes().size());
+				json.endObject();
 			}
-			first = false;
 
-			json.append("  {\n");
-			json.append("    \"name\": \"").append(escapeJson(module.getName())).append("\",\n");
-			json.append("    \"typeCount\": ").append(module.getTypes().size());
-			json.append("\n  }");
+			json.endArray();
+		} catch (IOException ex) {
+			throw new RuntimeException("Failed to generate JSON: " + ex.getMessage(), ex);
 		}
-
-		json.append("\n]");
 
 		McpSchema.TextResourceContents contents = new McpSchema.TextResourceContents(
 			request.uri(),
 			MIME_TYPE,
-			json.toString()
+			buffer.toString()
 		);
 
 		return new McpSchema.ReadResourceResult(List.of(contents));
-	}
-
-	/**
-	 * Escapes a string for safe inclusion in JSON.
-	 *
-	 * @param text
-	 *        The text to escape.
-	 * @return The JSON-escaped text.
-	 */
-	private static String escapeJson(String text) {
-		if (text == null) {
-			return "";
-		}
-		return text.replace("\\", "\\\\")
-			.replace("\"", "\\\"")
-			.replace("\n", "\\n")
-			.replace("\r", "\\r")
-			.replace("\t", "\\t");
 	}
 }

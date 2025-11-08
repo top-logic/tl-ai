@@ -24,6 +24,10 @@
 			<groupId>com.top-logic</groupId>
 			<artifactId>tl-contact</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>com.top-logic</groupId>
+			<artifactId>tl-common-json</artifactId>
+		</dependency>
 
 		<!-- MCP SDK -->
 		<dependency>
