@@ -5,24 +5,24 @@ package com.top_logic.ai.mcp.server;
 
 import java.time.Duration;
 
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletException;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.top_logic.basic.config.InstantiationContext;
 import com.top_logic.basic.config.annotation.Name;
-import com.top_logic.basic.config.annotation.defaults.IntDefault;
 import com.top_logic.basic.config.annotation.defaults.LongDefault;
 import com.top_logic.basic.config.annotation.defaults.StringDefault;
 import com.top_logic.basic.module.ConfiguredManagedClass;
+import com.top_logic.basic.module.ServiceDependencies;
+import com.top_logic.basic.module.services.ServletContextService;
 
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportProvider;
-import io.modelcontextprotocol.spec.McpServerTransportProvider;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import jakarta.servlet.Servlet;
-import jakarta.servlet.ServletConfig;
-import jakarta.servlet.ServletException;
 
 /**
  * TopLogic service that provides an MCP (Model Context Protocol) server for exposing
@@ -35,18 +35,34 @@ import jakarta.servlet.ServletException;
  * </p>
  *
  * <p>
- * The service exposes two HTTP endpoints (registered in web.xml under /mcp/*):
+ * The service exposes two HTTP endpoints (registered in web-fragment.xml under /mcp/*):
  * <ul>
  * <li>SSE endpoint: /mcp/sse - For server-to-client event streaming</li>
  * <li>Message endpoint: /mcp/message - For client-to-server messages</li>
  * </ul>
  * </p>
  *
+ * <p>
+ * The service uses {@link ServletContextService} to obtain the application's context path
+ * at startup, ensuring that endpoint URLs sent to clients include the correct context path
+ * regardless of the deployment configuration.
+ * </p>
+ *
  * @author Bernhard Haumacher
  */
+@ServiceDependencies({
+	ServletContextService.Module.class
+})
 public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Config<?>> {
 
-	/** Base URL for MCP endpoints (empty = use servlet context path). */
+	/**
+	 * Base URL prefix for MCP endpoints.
+	 *
+	 * <p>
+	 * Set to empty string because the full base URL (including context path) is
+	 * constructed dynamically at runtime using {@link ServletContextService}.
+	 * </p>
+	 */
 	private static final String BASE_URL = "";
 
 	/** Path for the SSE endpoint (must match web.xml servlet mapping /mcp/*). */
@@ -142,10 +158,14 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 
 			Config<?> config = getConfig();
 
-			// Create HTTP SSE transport provider with fixed endpoints matching web.xml
+			// Get the application context path from ServletContextService
+			String contextPath = ServletContextService.getInstance().getServletContext().getContextPath();
+
+			// Create HTTP SSE transport provider with fixed endpoints matching web-fragment.xml
+			// The baseUrl includes the context path so clients receive the correct absolute endpoint URLs
 			_transportProvider = HttpServletSseServerTransportProvider.builder()
 				.jsonMapper(new JacksonMcpJsonMapper(new ObjectMapper()))
-				.baseUrl(BASE_URL)
+				.baseUrl(contextPath + BASE_URL)
 				.messageEndpoint(MESSAGE_ENDPOINT)
 				.sseEndpoint(SSE_ENDPOINT)
 				.keepAliveInterval(Duration.ofSeconds(config.getKeepAliveInterval()))

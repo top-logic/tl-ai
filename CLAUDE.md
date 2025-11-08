@@ -226,6 +226,37 @@ protected void startUp() {
 
 **Rationale:** Service errors are technical issues not visible to end-users. `ConfigurationError` and `ConfigurationException` are reserved for user-facing validation and configuration problems. Using `RuntimeException` for service errors ensures proper separation of concerns between technical failures and user-actionable errors.
 
+### Accessing Servlet Context Information
+
+When implementing services that need access to the web application context (e.g., context path, servlet context), use the `ServletContextService`:
+
+**Pattern:**
+```java
+import com.top_logic.basic.module.ServiceDependencies;
+import com.top_logic.basic.module.services.ServletContextService;
+
+@ServiceDependencies({
+    ServletContextService.Module.class
+})
+public class MyService extends ConfiguredManagedClass<MyService.Config<?>> {
+
+    @Override
+    protected void startUp() {
+        super.startUp();
+
+        // Get the application context path
+        String contextPath = ServletContextService.getInstance().getServletContext().getContextPath();
+
+        // Use context path in service initialization
+        String fullUrl = contextPath + "/my/endpoint";
+    }
+}
+```
+
+**Important:** When one service uses another service, you **must** declare the dependency using the `@ServiceDependencies` annotation. This ensures proper startup order - the `ServletContextService` will be started before your service.
+
+**Rationale:** The `ServletContextService` provides access to servlet context information even outside of HTTP request handling. This is essential for services that need to construct URLs or access deployment-specific information during initialization. Declaring the dependency ensures that the servlet context is available when your service starts up.
+
 ## Notes
 
 - Build artifacts are excluded from Git (in `.gitignore`)
