@@ -4,6 +4,11 @@
 package com.top_logic.ai.mcp.server.resources;
 
 import java.util.List;
+import java.util.stream.Collectors;
+
+import com.top_logic.model.TLModel;
+import com.top_logic.model.TLModule;
+import com.top_logic.util.model.ModelService;
 
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
@@ -76,35 +81,55 @@ public class ModelModulesResource {
 			McpSyncServerExchange exchange,
 			McpSchema.ReadResourceRequest request) {
 
-		// TODO: Replace with actual TopLogic module discovery
-		// For now, return a dummy list of modules
-		String jsonContent = """
-			[
-			  {
-			    "name": "tl.core",
-			    "description": "Core TopLogic types (TLObject, TLStructuredType, etc.)"
-			  },
-			  {
-			    "name": "tl.model",
-			    "description": "Model definitions and meta-model types"
-			  },
-			  {
-			    "name": "tl.element",
-			    "description": "Element structure and composition"
-			  },
-			  {
-			    "name": "example.project",
-			    "description": "Example application-specific types"
-			  }
-			]
-			""";
+		// Get the application model and retrieve all modules
+		TLModel model = ModelService.getApplicationModel();
+		List<TLModule> modules = model.getModules().stream()
+			.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
+			.collect(Collectors.toList());
+
+		// Build JSON array with module information
+		StringBuilder json = new StringBuilder();
+		json.append("[\n");
+
+		boolean first = true;
+		for (TLModule module : modules) {
+			if (!first) {
+				json.append(",\n");
+			}
+			first = false;
+
+			json.append("  {\n");
+			json.append("    \"name\": \"").append(escapeJson(module.getName())).append("\",\n");
+			json.append("    \"typeCount\": ").append(module.getTypes().size());
+			json.append("\n  }");
+		}
+
+		json.append("\n]");
 
 		McpSchema.TextResourceContents contents = new McpSchema.TextResourceContents(
 			request.uri(),
 			MIME_TYPE,
-			jsonContent
+			json.toString()
 		);
 
 		return new McpSchema.ReadResourceResult(List.of(contents));
+	}
+
+	/**
+	 * Escapes a string for safe inclusion in JSON.
+	 *
+	 * @param text
+	 *        The text to escape.
+	 * @return The JSON-escaped text.
+	 */
+	private static String escapeJson(String text) {
+		if (text == null) {
+			return "";
+		}
+		return text.replace("\\", "\\\\")
+			.replace("\"", "\\\"")
+			.replace("\n", "\\n")
+			.replace("\r", "\\r")
+			.replace("\t", "\\t");
 	}
 }
