@@ -11,6 +11,10 @@ import jakarta.servlet.ServletException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.top_logic.ai.mcp.server.resources.ModelModulesResource;
+import com.top_logic.ai.mcp.server.resources.ModuleTypesResource;
+import com.top_logic.ai.mcp.server.resources.TypePartsResource;
+import com.top_logic.ai.mcp.server.resources.TypeUsagesResource;
 import com.top_logic.basic.config.InstantiationContext;
 import com.top_logic.basic.config.annotation.Name;
 import com.top_logic.basic.config.annotation.defaults.LongDefault;
@@ -19,11 +23,6 @@ import com.top_logic.basic.module.ConfiguredManagedClass;
 import com.top_logic.basic.module.ServiceDependencies;
 import com.top_logic.basic.module.TypedRuntimeModule;
 import com.top_logic.basic.module.services.ServletContextService;
-
-import com.top_logic.ai.mcp.server.resources.ModelModulesResource;
-import com.top_logic.ai.mcp.server.resources.ModuleTypesResource;
-import com.top_logic.ai.mcp.server.resources.TypePartsResource;
-import com.top_logic.ai.mcp.server.resources.TypeUsagesResource;
 
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServer;
@@ -184,13 +183,15 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 				throw new RuntimeException("Failed to initialize MCP transport servlet: " + ex.getMessage(), ex);
 			}
 
-			// Create MCP server instance with sync API
-			_mcpServer = McpServer.sync(_transportProvider)
-				.serverInfo(config.getServerName(), config.getServerVersion())
-				.build();
+			// Create MCP server builder with sync API
+			var builder = McpServer.sync(_transportProvider)
+				.serverInfo(config.getServerName(), config.getServerVersion());
 
-			// Configure the server with application-specific capabilities
-			configureServer(_mcpServer);
+			// Configure the server with application-specific capabilities BEFORE building
+			configureServer(builder);
+
+			// Build the server
+			_mcpServer = builder.build();
 
 		} catch (RuntimeException ex) {
 			throw ex;
@@ -200,7 +201,7 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 	}
 
 	/**
-	 * Configures the MCP server with application-specific tools, resources, and prompts.
+	 * Configures the MCP server builder with application-specific tools, resources, and prompts.
 	 *
 	 * <p>
 	 * Override or extend this method to register custom MCP capabilities for your application.
@@ -216,21 +217,21 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 	 * <li>{@link TypeUsagesResource} - Finds usages of a specific type (dynamic resource template)</li>
 	 * </ul>
 	 *
-	 * @param server
-	 *        The MCP server to configure.
+	 * @param builder
+	 *        The MCP server builder to configure.
 	 */
-	protected void configureServer(McpSyncServer server) {
+	protected void configureServer(McpServer.SyncSpecification<?> builder) {
 		// Register resource for listing TopLogic model modules
-		server.addResource(ModelModulesResource.createSpecification());
+		builder.resources(ModelModulesResource.createSpecification());
 
 		// Register resource template for listing types in a specific module
-		server.addResourceTemplate(ModuleTypesResource.createSpecification());
+		builder.resourceTemplates(ModuleTypesResource.createSpecification());
 
 		// Register resource template for listing parts in a specific type
-		server.addResourceTemplate(TypePartsResource.createSpecification());
+		builder.resourceTemplates(TypePartsResource.createSpecification());
 
 		// Register resource template for finding usages of a specific type
-		server.addResourceTemplate(TypeUsagesResource.createSpecification());
+		builder.resourceTemplates(TypeUsagesResource.createSpecification());
 	}
 
 	@Override
