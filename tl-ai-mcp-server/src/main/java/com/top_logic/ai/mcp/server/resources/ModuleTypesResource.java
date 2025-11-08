@@ -122,8 +122,9 @@ public class ModuleTypesResource {
 			throw new IllegalArgumentException("Module not found: " + moduleName);
 		}
 
-		// Get all types in the module, sorted by name
+		// Get all types in the module, excluding associations (implementation details)
 		List<TLType> types = module.getTypes().stream()
+			.filter(type -> type.getModelKind() != ModelKind.ASSOCIATION)
 			.sorted((t1, t2) -> t1.getName().compareTo(t2.getName()))
 			.collect(Collectors.toList());
 

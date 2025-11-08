@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import com.top_logic.basic.util.ResKey;
 import com.top_logic.common.json.gstream.JsonWriter;
+import com.top_logic.model.ModelKind;
 import com.top_logic.model.TLModel;
 import com.top_logic.model.TLModule;
 import com.top_logic.model.visit.LabelVisitor;
@@ -102,7 +103,12 @@ public class ModelModulesResource {
 			for (TLModule module : modules) {
 				json.beginObject();
 				json.name("name").value(module.getName());
-				json.name("typeCount").value(module.getTypes().size());
+
+				// Count only non-association types (associations are implementation details)
+				long typeCount = module.getTypes().stream()
+					.filter(type -> type.getModelKind() != ModelKind.ASSOCIATION)
+					.count();
+				json.name("typeCount").value(typeCount);
 
 				// Get the resource key for the module (handles defaults if no annotation)
 				ResKey moduleKey = LabelVisitor.getModuleResourceKey(module);
