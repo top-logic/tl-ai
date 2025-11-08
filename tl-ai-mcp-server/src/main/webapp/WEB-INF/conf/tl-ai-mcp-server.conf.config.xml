@@ -22,6 +22,10 @@
 			<instance class="com.top_logic.ai.mcp.server.MCPServerService"
 				server-name="TopLogic MCP Server"
 				server-version="1.0.0"
+				base-url=""
+				message-endpoint="/mcp/message"
+				sse-endpoint="/mcp/sse"
+				keep-alive-interval="30"
 			/>
 		</config>
 	</services>

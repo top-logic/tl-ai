@@ -96,8 +96,15 @@
 <!--  Custom servlet definitions                                             -->
 <!-- ======================================================================= -->
 
+<!-- MCP (Model Context Protocol) server servlet -->
+    <servlet>
+        <servlet-name>MCPServlet</servlet-name>
+        <servlet-class>com.top_logic.ai.mcp.server.MCPServlet</servlet-class>
+        <async-supported>true</async-supported>
+    </servlet>
+
 <!-- Optional login servlet which logs on the user via HTTP basic authentication -->
-<!-- 
+<!--
     <servlet>
         <servlet-name>BasicAuth</servlet-name>
         <servlet-class>com.top_logic.base.accesscontrol.BasicAuthenticationServlet</servlet-class>
@@ -108,8 +115,14 @@
 <!--  Custom servlet mappings                                                -->
 <!-- ======================================================================= -->
 
+<!-- MCP server endpoints -->
+    <servlet-mapping>
+        <servlet-name>MCPServlet</servlet-name>
+        <url-pattern>/mcp/*</url-pattern>
+    </servlet-mapping>
+
 <!-- Optional login through basic auth -->
-<!-- 
+<!--
     <servlet-mapping>
         <servlet-name>BasicAuth</servlet-name>
         <url-pattern>/servlet/BasicAuth</url-pattern>
