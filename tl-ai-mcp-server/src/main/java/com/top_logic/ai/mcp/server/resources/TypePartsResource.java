@@ -167,9 +167,20 @@ public class TypePartsResource {
 					json.name("type").value(TLModelUtil.qualifiedName(partType));
 				}
 
-				// Add multiplicity information
+				// Add multiplicity and collection characteristics
 				json.name("mandatory").value(part.isMandatory());
 				json.name("multiple").value(part.isMultiple());
+
+				if (part.isMultiple()) {
+					// Only relevant for multiple-valued parts
+					json.name("ordered").value(part.isOrdered());
+					json.name("bag").value(part.isBag());
+				}
+
+				// Add structural properties
+				json.name("abstract").value(part.isAbstract());
+				json.name("derived").value(part.isDerived());
+				json.name("override").value(part.isOverride());
 
 				// Get the resource key for the part (checks annotation and handles defaults)
 				ResKey partKey = TLTypePartResourceProvider.labelKey(part);

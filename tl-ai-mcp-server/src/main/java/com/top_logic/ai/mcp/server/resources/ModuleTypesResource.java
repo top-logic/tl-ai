@@ -5,6 +5,7 @@ package com.top_logic.ai.mcp.server.resources;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.Collection;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -13,6 +14,7 @@ import java.util.stream.Collectors;
 import com.top_logic.basic.util.ResKey;
 import com.top_logic.common.json.gstream.JsonWriter;
 import com.top_logic.model.ModelKind;
+import com.top_logic.model.TLClass;
 import com.top_logic.model.TLModel;
 import com.top_logic.model.TLModule;
 import com.top_logic.model.TLStructuredType;
@@ -150,6 +152,31 @@ public class ModuleTypesResource {
 					TLStructuredType structuredType = (TLStructuredType) type;
 					int partCount = structuredType.getLocalParts().size();
 					json.name("partCount").value(partCount);
+				}
+
+				// Add inheritance information (for classes)
+				if (type instanceof TLClass) {
+					TLClass tlClass = (TLClass) type;
+
+					// Add generalizations (supertypes)
+					List<TLClass> generalizations = tlClass.getGeneralizations();
+					if (!generalizations.isEmpty()) {
+						json.name("generalizations").beginArray();
+						for (TLClass generalization : generalizations) {
+							json.value(TLModelUtil.qualifiedName(generalization));
+						}
+						json.endArray();
+					}
+
+					// Add specializations (subtypes)
+					Collection<TLClass> specializations = tlClass.getSpecializations();
+					if (!specializations.isEmpty()) {
+						json.name("specializations").beginArray();
+						for (TLClass specialization : specializations) {
+							json.value(TLModelUtil.qualifiedName(specialization));
+						}
+						json.endArray();
+					}
 				}
 
 				// Get the resource key for the type (checks annotation and handles defaults)
