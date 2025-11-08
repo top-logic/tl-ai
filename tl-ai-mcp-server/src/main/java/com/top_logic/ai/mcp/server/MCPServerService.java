@@ -5,7 +5,6 @@ package com.top_logic.ai.mcp.server;
 
 import java.time.Duration;
 
-import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 
@@ -163,8 +162,9 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 
 			Config<?> config = getConfig();
 
-			// Get the application context path from ServletContextService
-			String contextPath = ServletContextService.getInstance().getServletContext().getContextPath();
+			// Get the servlet context from ServletContextService
+			jakarta.servlet.ServletContext servletContext = ServletContextService.getInstance().getServletContext();
+			String contextPath = servletContext.getContextPath();
 
 			// Create HTTP SSE transport provider with fixed endpoints matching web-fragment.xml
 			// The baseUrl includes the context path so clients receive the correct absolute endpoint URLs
@@ -176,7 +176,19 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 				.keepAliveInterval(Duration.ofSeconds(config.getKeepAliveInterval()))
 				.build();
 
-			// Initialize the servlet - required for HttpServlet-based transport
+			// Register the transport servlet dynamically with async support
+			jakarta.servlet.ServletRegistration.Dynamic registration =
+				servletContext.addServlet("MCPTransportServlet", _transportProvider);
+
+			if (registration != null) {
+				// Configure async support - required for SSE
+				registration.setAsyncSupported(true);
+
+				// Map to /mcp/* URL pattern
+				registration.addMapping("/mcp/*");
+			}
+
+			// Initialize the servlet
 			try {
 				_transportProvider.init(new ServletConfigAdapter());
 			} catch (ServletException ex) {
@@ -275,19 +287,6 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 		return _mcpServer;
 	}
 
-	/**
-	 * Returns the HTTP servlet transport provider.
-	 *
-	 * <p>
-	 * The transport provider is an HttpServlet that handles MCP protocol communication.
-	 * This can be registered with the servlet container to expose the MCP endpoints.
-	 * </p>
-	 *
-	 * @return The transport provider servlet, or {@code null} if not started.
-	 */
-	public Servlet getTransportServlet() {
-		return _transportProvider;
-	}
 
 	/**
 	 * Simple ServletConfig adapter for initializing the MCP transport servlet.
