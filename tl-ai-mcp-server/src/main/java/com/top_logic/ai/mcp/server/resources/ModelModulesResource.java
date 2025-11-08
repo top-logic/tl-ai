@@ -8,10 +8,11 @@ import java.io.StringWriter;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.top_logic.basic.util.ResKey;
 import com.top_logic.common.json.gstream.JsonWriter;
 import com.top_logic.model.TLModel;
 import com.top_logic.model.TLModule;
-import com.top_logic.model.annotate.TLI18NKey;
+import com.top_logic.model.visit.LabelVisitor;
 import com.top_logic.util.Resources;
 import com.top_logic.util.model.ModelService;
 
@@ -103,13 +104,21 @@ public class ModelModulesResource {
 				json.name("name").value(module.getName());
 				json.name("typeCount").value(module.getTypes().size());
 
-				// Add description from TLI18NKey annotation if available
-				TLI18NKey i18nKey = module.getAnnotation(TLI18NKey.class);
-				if (i18nKey != null) {
-					String description = Resources.getInstance().getString(i18nKey.getValue());
-					if (description != null && !description.isEmpty()) {
-						json.name("description").value(description);
-					}
+				// Get the resource key for the module (handles defaults if no annotation)
+				ResKey moduleKey = LabelVisitor.getModuleResourceKey(module);
+				Resources resources = Resources.getInstance();
+
+				// Add label from the resource key
+				String label = resources.getString(moduleKey);
+				if (label != null && !label.isEmpty()) {
+					json.name("label").value(label);
+				}
+
+				// Add description from tooltip sub-key
+				ResKey tooltipKey = moduleKey.tooltip();
+				String description = resources.getString(tooltipKey, null);
+				if (description != null && !description.isEmpty()) {
+					json.name("description").value(description);
 				}
 
 				json.endObject();
