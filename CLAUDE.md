@@ -109,6 +109,37 @@ The framework uses a parent POM hierarchy where modules inherit from either:
 3. **Custom Java Code**: Add to `src/main/java/com/top_logic/ai/<module>/`
 4. **Tests**: Place in `src/test/java/com/top_logic/ai/<module>/`
 
+## MCP Server Configuration
+
+The MCP (Model Context Protocol) server is configured through two separate mechanisms:
+
+### Servlet Mapping (web.xml)
+
+Controls which URL patterns are routed to the MCP servlet:
+
+```xml
+<servlet-mapping>
+    <servlet-name>MCPServlet</servlet-name>
+    <url-pattern>/mcp/*</url-pattern>
+</servlet-mapping>
+```
+
+### Service Configuration (conf.config.xml)
+
+Controls the MCP server behavior:
+
+```xml
+<config service-class="com.top_logic.ai.mcp.server.MCPServerService">
+    <instance class="com.top_logic.ai.mcp.server.MCPServerService"
+        server-name="TopLogic MCP Server"
+        server-version="1.0.0"
+        keep-alive-interval="30"
+    />
+</config>
+```
+
+**Important:** Endpoint paths (`/mcp/sse` and `/mcp/message`) are hardcoded in `MCPServerService` to match the `web.xml` servlet mapping. Do not configure endpoints separately to avoid configuration redundancy and potential mismatches.
+
 ## Build Artifacts
 
 Build output includes:

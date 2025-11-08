@@ -35,16 +35,25 @@ import jakarta.servlet.ServletException;
  * </p>
  *
  * <p>
- * The service exposes two HTTP endpoints:
+ * The service exposes two HTTP endpoints (registered in web.xml under /mcp/*):
  * <ul>
- * <li>SSE endpoint (default: /mcp/sse) - For server-to-client event streaming</li>
- * <li>Message endpoint (default: /mcp/message) - For client-to-server messages</li>
+ * <li>SSE endpoint: /mcp/sse - For server-to-client event streaming</li>
+ * <li>Message endpoint: /mcp/message - For client-to-server messages</li>
  * </ul>
  * </p>
  *
  * @author Bernhard Haumacher
  */
 public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Config<?>> {
+
+	/** Base URL for MCP endpoints (empty = use servlet context path). */
+	private static final String BASE_URL = "";
+
+	/** Path for the SSE endpoint (must match web.xml servlet mapping /mcp/*). */
+	private static final String SSE_ENDPOINT = "/mcp/sse";
+
+	/** Path for the message endpoint (must match web.xml servlet mapping /mcp/*). */
+	private static final String MESSAGE_ENDPOINT = "/mcp/message";
 
 	/**
 	 * Configuration interface for {@link MCPServerService}.
@@ -66,27 +75,6 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 		String SERVER_VERSION = "server-version";
 
 		/**
-		 * Configuration property name for base URL.
-		 *
-		 * @see #getBaseUrl()
-		 */
-		String BASE_URL = "base-url";
-
-		/**
-		 * Configuration property name for message endpoint path.
-		 *
-		 * @see #getMessageEndpoint()
-		 */
-		String MESSAGE_ENDPOINT = "message-endpoint";
-
-		/**
-		 * Configuration property name for SSE endpoint path.
-		 *
-		 * @see #getSseEndpoint()
-		 */
-		String SSE_ENDPOINT = "sse-endpoint";
-
-		/**
 		 * Configuration property name for keep-alive interval in seconds.
 		 *
 		 * @see #getKeepAliveInterval()
@@ -106,33 +94,6 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 		@Name(SERVER_VERSION)
 		@StringDefault("1.0.0")
 		String getServerVersion();
-
-		/**
-		 * The base URL for the MCP server endpoints.
-		 *
-		 * <p>Default: "" (empty, uses servlet context path)</p>
-		 */
-		@Name(BASE_URL)
-		@StringDefault("")
-		String getBaseUrl();
-
-		/**
-		 * The path for the message endpoint (client-to-server messages).
-		 *
-		 * <p>Default: "/mcp/message"</p>
-		 */
-		@Name(MESSAGE_ENDPOINT)
-		@StringDefault("/mcp/message")
-		String getMessageEndpoint();
-
-		/**
-		 * The path for the SSE endpoint (server-to-client events).
-		 *
-		 * <p>Default: "/mcp/sse"</p>
-		 */
-		@Name(SSE_ENDPOINT)
-		@StringDefault("/mcp/sse")
-		String getSseEndpoint();
 
 		/**
 		 * Keep-alive interval in seconds for SSE connections.
@@ -181,12 +142,12 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 
 			Config<?> config = getConfig();
 
-			// Create HTTP SSE transport provider
+			// Create HTTP SSE transport provider with fixed endpoints matching web.xml
 			_transportProvider = HttpServletSseServerTransportProvider.builder()
 				.jsonMapper(new JacksonMcpJsonMapper(new ObjectMapper()))
-				.baseUrl(config.getBaseUrl())
-				.messageEndpoint(config.getMessageEndpoint())
-				.sseEndpoint(config.getSseEndpoint())
+				.baseUrl(BASE_URL)
+				.messageEndpoint(MESSAGE_ENDPOINT)
+				.sseEndpoint(SSE_ENDPOINT)
 				.keepAliveInterval(Duration.ofSeconds(config.getKeepAliveInterval()))
 				.build();
 
