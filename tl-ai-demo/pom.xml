@@ -19,6 +19,11 @@
 		<!-- TopLogic -->
 		<dependency>
 			<groupId>com.top-logic</groupId>
+			<artifactId>tl-ai-mcp-server</artifactId>
+			<version>${tl.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.top-logic</groupId>
 			<artifactId>tl-themes-core</artifactId>
 		</dependency>
 		<dependency>
