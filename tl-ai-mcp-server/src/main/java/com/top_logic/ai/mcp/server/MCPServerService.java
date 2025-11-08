@@ -19,6 +19,8 @@ import com.top_logic.basic.module.ConfiguredManagedClass;
 import com.top_logic.basic.module.ServiceDependencies;
 import com.top_logic.basic.module.services.ServletContextService;
 
+import com.top_logic.ai.mcp.server.resources.ModelModulesResource;
+
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpSyncServer;
@@ -200,17 +202,19 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 	 * Override or extend this method to register custom MCP capabilities for your application.
 	 * </p>
 	 *
+	 * <p>
+	 * Default implementation registers resources for TopLogic model exploration:
+	 * </p>
+	 * <ul>
+	 * <li>{@link ModelModulesResource} - Lists available data model modules</li>
+	 * </ul>
+	 *
 	 * @param server
 	 *        The MCP server to configure.
 	 */
 	protected void configureServer(McpSyncServer server) {
-		// Default implementation - to be extended by subclasses or application code
-		// Example using McpServerFeatures:
-		// var toolSpec = new McpServerFeatures.SyncToolSpecification(
-		//     new Tool("myTool", "Description", schema),
-		//     (exchange, arguments) -> new CallToolResult(result, false)
-		// );
-		// server.addTool(toolSpec);
+		// Register resource for listing TopLogic model modules
+		server.addResource(ModelModulesResource.createSpecification());
 	}
 
 	@Override
