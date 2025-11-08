@@ -12,8 +12,10 @@ import java.util.stream.Collectors;
 
 import com.top_logic.basic.util.ResKey;
 import com.top_logic.common.json.gstream.JsonWriter;
+import com.top_logic.model.ModelKind;
 import com.top_logic.model.TLModel;
 import com.top_logic.model.TLModule;
+import com.top_logic.model.TLStructuredType;
 import com.top_logic.model.TLType;
 import com.top_logic.model.util.TLModelNamingConvention;
 import com.top_logic.model.util.TLModelUtil;
@@ -138,6 +140,17 @@ public class ModuleTypesResource {
 				// Use TLModelUtil to create the qualified name
 				json.name("qualifiedName").value(TLModelUtil.qualifiedName(type));
 
+				// Add meta-type (class, primitive, enum, etc.)
+				ModelKind modelKind = type.getModelKind();
+				json.name("metaType").value(modelKind.name().toLowerCase());
+
+				// Add part count (for structured types that have parts)
+				if (type instanceof TLStructuredType) {
+					TLStructuredType structuredType = (TLStructuredType) type;
+					int partCount = structuredType.getLocalParts().size();
+					json.name("partCount").value(partCount);
+				}
+
 				// Get the resource key for the type (checks annotation and handles defaults)
 				ResKey typeKey = TLModelNamingConvention.getTypeLabelKey(type);
 				Resources resources = Resources.getInstance();
@@ -185,15 +198,40 @@ public class ModuleTypesResource {
 	 *        The URI template string (e.g., "toplogic://model/modules/{moduleName}/types").
 	 * @return A compiled Pattern that can match and extract variables from URIs.
 	 */
-	private static Pattern createUriPattern(String template) {
-		// Escape special regex characters except for template variables
-		String escaped = Pattern.quote(template);
+	static Pattern createUriPattern(String template) {
+		// Split the template into literal parts and variable parts
+		// Build the pattern by quoting literals and replacing variables with capture groups
+		StringBuilder patternBuilder = new StringBuilder();
+		int pos = 0;
 
-		// Replace template variables {variableName} with capture groups
-		// Pattern.quote escapes braces as \Q{variableName}\E, so we need to handle this
-		String pattern = escaped.replaceAll("\\\\Q\\{[^}]+\\}\\\\E", "([^/]+)");
+		while (pos < template.length()) {
+			int varStart = template.indexOf('{', pos);
 
-		return Pattern.compile(pattern);
+			if (varStart == -1) {
+				// No more variables, quote the remaining literal part
+				patternBuilder.append(Pattern.quote(template.substring(pos)));
+				break;
+			}
+
+			// Quote the literal part before the variable
+			if (varStart > pos) {
+				patternBuilder.append(Pattern.quote(template.substring(pos, varStart)));
+			}
+
+			// Find the end of the variable
+			int varEnd = template.indexOf('}', varStart);
+			if (varEnd == -1) {
+				throw new IllegalArgumentException("Unclosed variable in template: " + template);
+			}
+
+			// Add capture group for the variable
+			patternBuilder.append("([^/]+)");
+
+			// Move past the variable
+			pos = varEnd + 1;
+		}
+
+		return Pattern.compile(patternBuilder.toString());
 	}
 
 	/**
