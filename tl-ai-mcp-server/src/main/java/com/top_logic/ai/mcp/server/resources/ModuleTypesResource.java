@@ -53,8 +53,14 @@ public class ModuleTypesResource {
 	/** URI template for module types resource. */
 	public static final String URI_TEMPLATE = "toplogic://model/modules/{moduleName}/types";
 
-	/** Pattern for extracting module name from URI. */
-	private static final Pattern URI_PATTERN = Pattern.compile("toplogic://model/modules/([^/]+)/types");
+	/**
+	 * Pattern for extracting module name from URI.
+	 *
+	 * <p>
+	 * Derived from {@link #URI_TEMPLATE} by replacing template variables with capture groups.
+	 * </p>
+	 */
+	private static final Pattern URI_PATTERN = createUriPattern(URI_TEMPLATE);
 
 	/** Resource name template. */
 	private static final String NAME_TEMPLATE = "module-types-{moduleName}";
@@ -164,6 +170,30 @@ public class ModuleTypesResource {
 		);
 
 		return new McpSchema.ReadResourceResult(List.of(contents));
+	}
+
+	/**
+	 * Creates a regex pattern from a URI template by replacing template variables with capture
+	 * groups.
+	 *
+	 * <p>
+	 * Template variables in the format {@code {variableName}} are replaced with the regex
+	 * {@code ([^/]+)} which captures one or more non-slash characters.
+	 * </p>
+	 *
+	 * @param template
+	 *        The URI template string (e.g., "toplogic://model/modules/{moduleName}/types").
+	 * @return A compiled Pattern that can match and extract variables from URIs.
+	 */
+	private static Pattern createUriPattern(String template) {
+		// Escape special regex characters except for template variables
+		String escaped = Pattern.quote(template);
+
+		// Replace template variables {variableName} with capture groups
+		// Pattern.quote escapes braces as \Q{variableName}\E, so we need to handle this
+		String pattern = escaped.replaceAll("\\\\Q\\{[^}]+\\}\\\\E", "([^/]+)");
+
+		return Pattern.compile(pattern);
 	}
 
 	/**
