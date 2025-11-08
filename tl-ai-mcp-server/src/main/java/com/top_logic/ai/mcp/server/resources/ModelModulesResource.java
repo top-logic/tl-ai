@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
 import com.top_logic.common.json.gstream.JsonWriter;
 import com.top_logic.model.TLModel;
 import com.top_logic.model.TLModule;
+import com.top_logic.model.annotate.TLI18NKey;
+import com.top_logic.util.Resources;
 import com.top_logic.util.model.ModelService;
 
 import io.modelcontextprotocol.server.McpServerFeatures;
@@ -100,6 +102,16 @@ public class ModelModulesResource {
 				json.beginObject();
 				json.name("name").value(module.getName());
 				json.name("typeCount").value(module.getTypes().size());
+
+				// Add description from TLI18NKey annotation if available
+				TLI18NKey i18nKey = module.getAnnotation(TLI18NKey.class);
+				if (i18nKey != null) {
+					String description = Resources.getInstance().getString(i18nKey.getValue());
+					if (description != null && !description.isEmpty()) {
+						json.name("description").value(description);
+					}
+				}
+
 				json.endObject();
 			}
 

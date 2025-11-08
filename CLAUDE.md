@@ -257,6 +257,52 @@ public class MyService extends ConfiguredManagedClass<MyService.Config<?>> {
 
 **Rationale:** The `ServletContextService` provides access to servlet context information even outside of HTTP request handling. This is essential for services that need to construct URLs or access deployment-specific information during initialization. Declaring the dependency ensures that the servlet context is available when your service starts up.
 
+## Git Commit Messages
+
+When creating commit messages, follow these conventions:
+
+**Structure:**
+```
+Short summary line (imperative mood, max 50 chars)
+
+Detailed explanation of what changed and why (wrap at 72 chars).
+Can span multiple paragraphs if needed.
+
+- Bullet points for key changes
+- Another change
+
+User prompts:
+> Original user request that led to this change
+> Additional user clarification or feedback
+```
+
+**Important Rules:**
+- **DO NOT** add Claude signature lines like "🤖 Generated with Claude Code" or "Co-Authored-By: Claude"
+- **DO** include the user prompts that produced the commit as the last section
+- Use imperative mood in the summary ("Add feature" not "Added feature")
+- Separate summary from body with a blank line
+- Wrap body text at 72 characters
+- Use bullet points for listing multiple changes
+
+**Example:**
+```
+Add module description to ModelModulesResource
+
+Enhance the model modules resource to include module descriptions by
+retrieving them from TLI18NKey annotations. This provides more context
+for AI agents browsing the TopLogic model structure.
+
+- Retrieve TLI18NKey annotation from each module
+- Resolve the resource key to get the localized description
+- Include description field in JSON output when available
+
+User prompts:
+> A TLModule actually has a description. Unfortunately this is not
+> available as property or getter. In the UI it is possible to enter
+> a description when creating a module. Use this description as
+> additional information in the modules resource.
+```
+
 ## Notes
 
 - Build artifacts are excluded from Git (in `.gitignore`)
