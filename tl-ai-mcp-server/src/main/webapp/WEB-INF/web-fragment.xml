@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-fragment xmlns="http://java.sun.com/xml/ns/javaee"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-fragment_3_0.xsd"
+  version="3.0"
+>
+    <name>tl-ai-mcp-server</name>
+
+<!-- ======================================================================= -->
+<!--  MCP (Model Context Protocol) Server Servlet                           -->
+<!-- ======================================================================= -->
+
+    <servlet>
+        <servlet-name>MCPServlet</servlet-name>
+        <servlet-class>com.top_logic.ai.mcp.server.MCPServlet</servlet-class>
+        <async-supported>true</async-supported>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>MCPServlet</servlet-name>
+        <url-pattern>/mcp/*</url-pattern>
+    </servlet-mapping>
+
+</web-fragment>

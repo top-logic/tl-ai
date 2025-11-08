@@ -66,6 +66,7 @@ Each module follows standard Maven structure:
 <module>/
 ├── src/main/java/com/top_logic/ai/<module>/  # Java source code
 ├── src/main/webapp/WEB-INF/                    # Web application resources
+│   ├── web-fragment.xml                        # Servlet registration (modules only)
 │   ├── conf/                                   # Application configuration
 │   ├── model/                                  # TopLogic model definitions
 │   ├── autoconf/                               # Auto-configuration
@@ -75,6 +76,8 @@ Each module follows standard Maven structure:
 ├── src/test/java/                              # Test sources
 └── src/test/webapp/WEB-INF/                    # Test configurations
 ```
+
+**Important:** TopLogic modules must use `web-fragment.xml` for servlet registration, not `web.xml`. Only top-level applications should have a `web.xml` deployment descriptor.
 
 ### Key Configuration Files
 
@@ -113,16 +116,34 @@ The framework uses a parent POM hierarchy where modules inherit from either:
 
 The MCP (Model Context Protocol) server is configured through two separate mechanisms:
 
-### Servlet Mapping (web.xml)
+### Servlet Mapping (web-fragment.xml)
 
-Controls which URL patterns are routed to the MCP servlet:
+The `tl-ai-mcp-server` module uses a `web-fragment.xml` file (not `web.xml`) to register its servlet. This follows TopLogic's modular architecture where:
+- **Modules** use `web-fragment.xml` to register servlets and filters
+- **Applications** use `web.xml` as the main deployment descriptor
+
+The servlet mapping controls which URL patterns are routed to the MCP servlet:
 
 ```xml
-<servlet-mapping>
-    <servlet-name>MCPServlet</servlet-name>
-    <url-pattern>/mcp/*</url-pattern>
-</servlet-mapping>
+<web-fragment xmlns="http://java.sun.com/xml/ns/javaee"
+  xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-fragment_3_0.xsd"
+  version="3.0">
+    <name>tl-ai-mcp-server</name>
+
+    <servlet>
+        <servlet-name>MCPServlet</servlet-name>
+        <servlet-class>com.top_logic.ai.mcp.server.MCPServlet</servlet-class>
+        <async-supported>true</async-supported>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>MCPServlet</servlet-name>
+        <url-pattern>/mcp/*</url-pattern>
+    </servlet-mapping>
+</web-fragment>
 ```
+
+**Location:** `tl-ai-mcp-server/src/main/webapp/WEB-INF/web-fragment.xml`
 
 ### Service Configuration (conf.config.xml)
 
@@ -138,7 +159,7 @@ Controls the MCP server behavior:
 </config>
 ```
 
-**Important:** Endpoint paths (`/mcp/sse` and `/mcp/message`) are hardcoded in `MCPServerService` to match the `web.xml` servlet mapping. Do not configure endpoints separately to avoid configuration redundancy and potential mismatches.
+**Important:** Endpoint paths (`/mcp/sse` and `/mcp/message`) are hardcoded in `MCPServerService` to match the servlet mapping in `web-fragment.xml`. Do not configure endpoints separately to avoid configuration redundancy and potential mismatches.
 
 ## Build Artifacts
 
