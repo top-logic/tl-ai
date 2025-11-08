@@ -20,6 +20,7 @@ import com.top_logic.basic.module.ServiceDependencies;
 import com.top_logic.basic.module.services.ServletContextService;
 
 import com.top_logic.ai.mcp.server.resources.ModelModulesResource;
+import com.top_logic.ai.mcp.server.resources.ModuleTypesResource;
 
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServer;
@@ -207,6 +208,7 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 	 * </p>
 	 * <ul>
 	 * <li>{@link ModelModulesResource} - Lists available data model modules</li>
+	 * <li>{@link ModuleTypesResource} - Lists types within a specific module (dynamic resource template)</li>
 	 * </ul>
 	 *
 	 * @param server
@@ -215,6 +217,9 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 	protected void configureServer(McpSyncServer server) {
 		// Register resource for listing TopLogic model modules
 		server.addResource(ModelModulesResource.createSpecification());
+
+		// Register resource template for listing types in a specific module
+		server.addResourceTemplate(ModuleTypesResource.createSpecification());
 	}
 
 	@Override
