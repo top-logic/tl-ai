@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "tl": {
+      "type": "sse",
+      "url": "http://localhost:8080/tl-ai-demo/mcp/sse"
+    }
+  }
+}
