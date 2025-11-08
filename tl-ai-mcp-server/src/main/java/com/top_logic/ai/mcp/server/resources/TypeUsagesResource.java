@@ -11,6 +11,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.top_logic.basic.thread.ThreadContextManager;
 import com.top_logic.common.json.gstream.JsonWriter;
 import com.top_logic.model.TLClass;
 import com.top_logic.model.TLModel;
@@ -103,6 +104,10 @@ public class TypeUsagesResource {
 	/**
 	 * Handles requests to read a type's usages resource.
 	 *
+	 * <p>
+	 * Sets up TopLogic thread context and delegates to {@link #readTypeUsages(McpSchema.ReadResourceRequest)}.
+	 * </p>
+	 *
 	 * @param exchange
 	 *        The MCP server exchange for interacting with the client.
 	 * @param request
@@ -113,6 +118,22 @@ public class TypeUsagesResource {
 			McpSyncServerExchange exchange,
 			McpSchema.ReadResourceRequest request) {
 
+		// Wrap database access in system interaction context
+		return ThreadContextManager.inSystemInteraction(TypeUsagesResource.class, () -> readTypeUsages(request));
+	}
+
+	/**
+	 * Reads the list of usages for a specific TopLogic type.
+	 *
+	 * <p>
+	 * This method must be called within a TopLogic thread context (see {@link #handleReadRequest}).
+	 * </p>
+	 *
+	 * @param request
+	 *        The read resource request containing the URI with the qualified type name.
+	 * @return The resource content with the list of usages as JSON.
+	 */
+	private static McpSchema.ReadResourceResult readTypeUsages(McpSchema.ReadResourceRequest request) {
 		// Extract qualified type name from URI
 		String uri = request.uri();
 		String qualifiedTypeName = extractQualifiedTypeName(uri);

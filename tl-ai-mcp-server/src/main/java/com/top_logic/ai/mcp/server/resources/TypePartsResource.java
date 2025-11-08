@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.top_logic.basic.util.ResKey;
+import com.top_logic.basic.thread.ThreadContextManager;
 import com.top_logic.common.json.gstream.JsonWriter;
 import com.top_logic.model.ModelKind;
 import com.top_logic.model.TLModel;
@@ -103,6 +104,10 @@ public class TypePartsResource {
 	/**
 	 * Handles requests to read a type's parts resource.
 	 *
+	 * <p>
+	 * Sets up TopLogic thread context and delegates to {@link #readTypeParts(McpSchema.ReadResourceRequest)}.
+	 * </p>
+	 *
 	 * @param exchange
 	 *        The MCP server exchange for interacting with the client.
 	 * @param request
@@ -113,6 +118,22 @@ public class TypePartsResource {
 			McpSyncServerExchange exchange,
 			McpSchema.ReadResourceRequest request) {
 
+		// Wrap database access in system interaction context
+		return ThreadContextManager.inSystemInteraction(TypePartsResource.class, () -> readTypeParts(request));
+	}
+
+	/**
+	 * Reads the list of parts from a specific TopLogic type.
+	 *
+	 * <p>
+	 * This method must be called within a TopLogic thread context (see {@link #handleReadRequest}).
+	 * </p>
+	 *
+	 * @param request
+	 *        The read resource request containing the URI with the module and type names.
+	 * @return The resource content with the list of parts as JSON.
+	 */
+	private static McpSchema.ReadResourceResult readTypeParts(McpSchema.ReadResourceRequest request) {
 		// Extract module name and type name from URI
 		String uri = request.uri();
 		String[] names = extractNames(uri);

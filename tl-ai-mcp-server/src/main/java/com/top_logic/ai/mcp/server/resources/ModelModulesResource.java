@@ -80,6 +80,10 @@ public class ModelModulesResource {
 	/**
 	 * Handles requests to read the model modules resource.
 	 *
+	 * <p>
+	 * Sets up TopLogic thread context and delegates to {@link #readModules(McpSchema.ReadResourceRequest)}.
+	 * </p>
+	 *
 	 * @param exchange
 	 *        The MCP server exchange for interacting with the client.
 	 * @param request
@@ -91,61 +95,74 @@ public class ModelModulesResource {
 			McpSchema.ReadResourceRequest request) {
 
 		// Wrap database access in system interaction context
-		return ThreadContextManager.inSystemInteraction(ModelModulesResource.class, () -> {
-			// Get the application model and retrieve all modules
-			TLModel model = ModelService.getApplicationModel();
-			List<TLModule> modules = model.getModules().stream()
-				.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
-				.collect(Collectors.toList());
+		return ThreadContextManager.inSystemInteraction(ModelModulesResource.class, () -> readModules(request));
+	}
 
-			// Build JSON array with module information using JsonWriter
-			StringWriter buffer = new StringWriter();
-			try (JsonWriter json = new JsonWriter(buffer)) {
-				json.setIndent("  ");
-				json.beginArray();
+	/**
+	 * Reads the list of model modules from the TopLogic application model.
+	 *
+	 * <p>
+	 * This method must be called within a TopLogic thread context (see {@link #handleReadRequest}).
+	 * </p>
+	 *
+	 * @param request
+	 *        The read resource request containing the URI.
+	 * @return The resource content with the list of modules as JSON.
+	 */
+	private static McpSchema.ReadResourceResult readModules(McpSchema.ReadResourceRequest request) {
+		// Get the application model and retrieve all modules
+		TLModel model = ModelService.getApplicationModel();
+		List<TLModule> modules = model.getModules().stream()
+			.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
+			.collect(Collectors.toList());
 
-				for (TLModule module : modules) {
-					json.beginObject();
-					json.name("name").value(module.getName());
+		// Build JSON array with module information using JsonWriter
+		StringWriter buffer = new StringWriter();
+		try (JsonWriter json = new JsonWriter(buffer)) {
+			json.setIndent("  ");
+			json.beginArray();
 
-					// Count only non-association types (associations are implementation details)
-					long typeCount = module.getTypes().stream()
-						.filter(type -> type.getModelKind() != ModelKind.ASSOCIATION)
-						.count();
-					json.name("typeCount").value(typeCount);
+			for (TLModule module : modules) {
+				json.beginObject();
+				json.name("name").value(module.getName());
 
-					// Get the resource key for the module (handles defaults if no annotation)
-					ResKey moduleKey = LabelVisitor.getModuleResourceKey(module);
-					Resources resources = Resources.getInstance();
+				// Count only non-association types (associations are implementation details)
+				long typeCount = module.getTypes().stream()
+					.filter(type -> type.getModelKind() != ModelKind.ASSOCIATION)
+					.count();
+				json.name("typeCount").value(typeCount);
 
-					// Add label from the resource key (optional)
-					String label = resources.getString(moduleKey, null);
-					if (label != null && !label.isEmpty()) {
-						json.name("label").value(label);
-					}
+				// Get the resource key for the module (handles defaults if no annotation)
+				ResKey moduleKey = LabelVisitor.getModuleResourceKey(module);
+				Resources resources = Resources.getInstance();
 
-					// Add description from tooltip sub-key (optional)
-					ResKey tooltipKey = moduleKey.tooltip();
-					String description = resources.getString(tooltipKey, null);
-					if (description != null && !description.isEmpty()) {
-						json.name("description").value(description);
-					}
-
-					json.endObject();
+				// Add label from the resource key (optional)
+				String label = resources.getString(moduleKey, null);
+				if (label != null && !label.isEmpty()) {
+					json.name("label").value(label);
 				}
 
-				json.endArray();
-			} catch (IOException ex) {
-				throw new RuntimeException("Failed to generate JSON: " + ex.getMessage(), ex);
+				// Add description from tooltip sub-key (optional)
+				ResKey tooltipKey = moduleKey.tooltip();
+				String description = resources.getString(tooltipKey, null);
+				if (description != null && !description.isEmpty()) {
+					json.name("description").value(description);
+				}
+
+				json.endObject();
 			}
 
-			McpSchema.TextResourceContents contents = new McpSchema.TextResourceContents(
-				request.uri(),
-				MIME_TYPE,
-				buffer.toString()
-			);
+			json.endArray();
+		} catch (IOException ex) {
+			throw new RuntimeException("Failed to generate JSON: " + ex.getMessage(), ex);
+		}
 
-			return new McpSchema.ReadResourceResult(List.of(contents));
-		});
+		McpSchema.TextResourceContents contents = new McpSchema.TextResourceContents(
+			request.uri(),
+			MIME_TYPE,
+			buffer.toString()
+		);
+
+		return new McpSchema.ReadResourceResult(List.of(contents));
 	}
 }

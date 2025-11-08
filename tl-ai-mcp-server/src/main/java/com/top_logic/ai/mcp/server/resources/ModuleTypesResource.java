@@ -11,6 +11,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.top_logic.basic.thread.ThreadContextManager;
 import com.top_logic.basic.util.ResKey;
 import com.top_logic.common.json.gstream.JsonWriter;
 import com.top_logic.model.ModelKind;
@@ -102,6 +103,10 @@ public class ModuleTypesResource {
 	/**
 	 * Handles requests to read a module's types resource.
 	 *
+	 * <p>
+	 * Sets up TopLogic thread context and delegates to {@link #readModuleTypes(McpSchema.ReadResourceRequest)}.
+	 * </p>
+	 *
 	 * @param exchange
 	 *        The MCP server exchange for interacting with the client.
 	 * @param request
@@ -112,6 +117,22 @@ public class ModuleTypesResource {
 			McpSyncServerExchange exchange,
 			McpSchema.ReadResourceRequest request) {
 
+		// Wrap database access in system interaction context
+		return ThreadContextManager.inSystemInteraction(ModuleTypesResource.class, () -> readModuleTypes(request));
+	}
+
+	/**
+	 * Reads the list of types from a specific TopLogic module.
+	 *
+	 * <p>
+	 * This method must be called within a TopLogic thread context (see {@link #handleReadRequest}).
+	 * </p>
+	 *
+	 * @param request
+	 *        The read resource request containing the URI with the module name.
+	 * @return The resource content with the list of types as JSON.
+	 */
+	private static McpSchema.ReadResourceResult readModuleTypes(McpSchema.ReadResourceRequest request) {
 		// Extract module name from URI
 		String uri = request.uri();
 		String moduleName = extractModuleName(uri);
