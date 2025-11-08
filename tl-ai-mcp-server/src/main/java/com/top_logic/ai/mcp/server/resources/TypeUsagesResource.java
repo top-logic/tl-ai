@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 
 import com.top_logic.common.json.gstream.JsonWriter;
 import com.top_logic.model.TLClass;
-import com.top_logic.model.TLObject;
 import com.top_logic.model.TLModel;
 import com.top_logic.model.TLReference;
 import com.top_logic.model.TLStructuredTypePart;
@@ -217,7 +216,7 @@ public class TypeUsagesResource {
 		}
 
 		// Use getReferers() to find all TLStructuredTypePart instances that reference this type
-		for (Object referer : typeRef.getReferers((TLObject) type)) {
+		for (Object referer : typeRef.getReferers(type)) {
 			if (referer instanceof TLStructuredTypePart part) {
 				String ownerTypeName = TLModelUtil.qualifiedName(part.getOwner());
 				usages.add(new PropertyUsage(ownerTypeName, part.getName()));
