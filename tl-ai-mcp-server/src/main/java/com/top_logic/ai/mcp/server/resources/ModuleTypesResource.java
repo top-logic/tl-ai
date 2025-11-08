@@ -10,11 +10,9 @@ import java.util.stream.Collectors;
 
 import com.top_logic.basic.util.ResKey;
 import com.top_logic.common.json.gstream.JsonWriter;
-import com.top_logic.knowledge.gui.AbstractTLItemResourceProvider;
 import com.top_logic.model.TLModel;
 import com.top_logic.model.TLModule;
 import com.top_logic.model.TLType;
-import com.top_logic.model.annotate.TLI18NKey;
 import com.top_logic.model.util.TLModelNamingConvention;
 import com.top_logic.model.util.TLModelUtil;
 import com.top_logic.util.Resources;
@@ -129,8 +127,8 @@ public class ModuleTypesResource {
 				// Use TLModelUtil to create the qualified name
 				json.name("qualifiedName").value(TLModelUtil.qualifiedName(type));
 
-				// Get the resource key for the type (handles defaults if no annotation)
-				ResKey typeKey = getTypeResourceKey(type);
+				// Get the resource key for the type (checks annotation and handles defaults)
+				ResKey typeKey = TLModelNamingConvention.getTypeLabelKey(type);
 				Resources resources = Resources.getInstance();
 
 				// Add label from the resource key (optional)
@@ -180,27 +178,6 @@ public class ModuleTypesResource {
 		}
 
 		return uri.substring(prefix.length(), uri.length() - suffix.length());
-	}
-
-	/**
-	 * Gets the resource key for a type's label.
-	 *
-	 * <p>
-	 * Similar to {@link com.top_logic.model.visit.LabelVisitor#getModuleResourceKey(TLModule)},
-	 * this method checks for TLI18NKey annotation and falls back to default naming convention.
-	 * </p>
-	 *
-	 * @param type
-	 *        The type.
-	 * @return The resource key for the type's label.
-	 */
-	private static ResKey getTypeResourceKey(TLType type) {
-		TLI18NKey annotation = type.getAnnotation(TLI18NKey.class);
-		if (annotation != null) {
-			return annotation.getValue();
-		}
-
-		return TLModelNamingConvention.getTypeLabelKey(type);
 	}
 
 }
