@@ -108,13 +108,13 @@ public class ModelModulesResource {
 				ResKey moduleKey = LabelVisitor.getModuleResourceKey(module);
 				Resources resources = Resources.getInstance();
 
-				// Add label from the resource key
-				String label = resources.getString(moduleKey);
+				// Add label from the resource key (optional)
+				String label = resources.getString(moduleKey, null);
 				if (label != null && !label.isEmpty()) {
 					json.name("label").value(label);
 				}
 
-				// Add description from tooltip sub-key
+				// Add description from tooltip sub-key (optional)
 				ResKey tooltipKey = moduleKey.tooltip();
 				String description = resources.getString(tooltipKey, null);
 				if (description != null && !description.isEmpty()) {
