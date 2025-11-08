@@ -17,6 +17,7 @@ import com.top_logic.basic.config.annotation.defaults.LongDefault;
 import com.top_logic.basic.config.annotation.defaults.StringDefault;
 import com.top_logic.basic.module.ConfiguredManagedClass;
 import com.top_logic.basic.module.ServiceDependencies;
+import com.top_logic.basic.module.TypedRuntimeModule;
 import com.top_logic.basic.module.services.ServletContextService;
 
 import com.top_logic.ai.mcp.server.resources.ModelModulesResource;
@@ -311,6 +312,26 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 		@Override
 		public java.util.Enumeration<String> getInitParameterNames() {
 			return java.util.Collections.emptyEnumeration();
+		}
+	}
+
+	/**
+	 * Module for {@link MCPServerService}.
+	 */
+	public static final class Module extends TypedRuntimeModule<MCPServerService> {
+
+		/**
+		 * Singleton {@link MCPServerService.Module} instance.
+		 */
+		public static final MCPServerService.Module INSTANCE = new MCPServerService.Module();
+
+		private Module() {
+			// Singleton constructor
+		}
+
+		@Override
+		public Class<MCPServerService> getImplementation() {
+			return MCPServerService.class;
 		}
 	}
 }
