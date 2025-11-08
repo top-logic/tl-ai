@@ -9,13 +9,20 @@
 				</bundles>
 			</instance>
 		</config>
-		
+
 		<config service-class="com.top_logic.knowledge.service.migration.MigrationService">
 			<instance>
 				<modules>
 					<module name="tl-ai-mcp-server" />
 				</modules>
 			</instance>
+		</config>
+
+		<config service-class="com.top_logic.ai.mcp.server.MCPServerService">
+			<instance class="com.top_logic.ai.mcp.server.MCPServerService"
+				server-name="TopLogic MCP Server"
+				server-version="1.0.0"
+			/>
 		</config>
 	</services>
 
