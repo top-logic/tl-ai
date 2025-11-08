@@ -145,6 +145,35 @@ public interface Config<I extends MyService> extends ConfiguredManagedClass.Conf
 
 **Rationale:** This creates bidirectional documentation between the property name constant and its getter, making it easier to navigate and understand the configuration interface.
 
+### Exception Handling in Services
+
+When implementing TopLogic services (classes extending `ConfiguredManagedClass`), use appropriate exceptions for error handling:
+
+- **ConfigurationError / ConfigurationException**: ONLY for reporting problems to end-users of the application (e.g., invalid user input, configuration errors that users can fix)
+- **RuntimeException**: For technical errors in service initialization and operation (e.g., startup failures, resource initialization errors)
+
+**Pattern for Service Startup:**
+```java
+@Override
+protected void startUp() {
+    super.startUp();
+
+    try {
+        // Service initialization code
+        someResource.init();
+
+    } catch (RuntimeException ex) {
+        // Re-throw RuntimeExceptions as-is
+        throw ex;
+    } catch (Exception ex) {
+        // Wrap checked exceptions in RuntimeException
+        throw new RuntimeException("Failed to start service: " + ex.getMessage(), ex);
+    }
+}
+```
+
+**Rationale:** Service errors are technical issues not visible to end-users. `ConfigurationError` and `ConfigurationException` are reserved for user-facing validation and configuration problems. Using `RuntimeException` for service errors ensures proper separation of concerns between technical failures and user-actionable errors.
+
 ## Notes
 
 - Build artifacts are excluded from Git (in `.gitignore`)

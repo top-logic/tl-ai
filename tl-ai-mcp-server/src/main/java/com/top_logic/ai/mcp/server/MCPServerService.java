@@ -5,7 +5,6 @@ package com.top_logic.ai.mcp.server;
 
 import java.time.Duration;
 
-import com.top_logic.basic.ConfigurationError;
 import com.top_logic.basic.config.InstantiationContext;
 import com.top_logic.basic.config.annotation.Name;
 import com.top_logic.basic.config.annotation.defaults.IntDefault;
@@ -195,7 +194,7 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 			try {
 				_transportProvider.init(new ServletConfigAdapter());
 			} catch (ServletException ex) {
-				throw new ConfigurationError("Failed to initialize MCP transport servlet: " + ex.getMessage(), ex);
+				throw new RuntimeException("Failed to initialize MCP transport servlet: " + ex.getMessage(), ex);
 			}
 
 			// Create MCP server instance with sync API
@@ -206,8 +205,10 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 			// Configure the server with application-specific capabilities
 			configureServer(_mcpServer);
 
+		} catch (RuntimeException ex) {
+			throw ex;
 		} catch (Exception ex) {
-			throw new ConfigurationError("Failed to start MCP server: " + ex.getMessage(), ex);
+			throw new RuntimeException("Failed to start MCP server: " + ex.getMessage(), ex);
 		}
 	}
 
