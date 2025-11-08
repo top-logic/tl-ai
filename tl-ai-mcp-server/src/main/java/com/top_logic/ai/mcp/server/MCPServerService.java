@@ -52,22 +52,46 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 	 */
 	public interface Config<I extends MCPServerService> extends ConfiguredManagedClass.Config<I> {
 
-		/** Configuration property name for server name. */
+		/**
+		 * Configuration property name for server name.
+		 *
+		 * @see #getServerName()
+		 */
 		String SERVER_NAME = "server-name";
 
-		/** Configuration property name for server version. */
+		/**
+		 * Configuration property name for server version.
+		 *
+		 * @see #getServerVersion()
+		 */
 		String SERVER_VERSION = "server-version";
 
-		/** Configuration property name for base URL. */
+		/**
+		 * Configuration property name for base URL.
+		 *
+		 * @see #getBaseUrl()
+		 */
 		String BASE_URL = "base-url";
 
-		/** Configuration property name for message endpoint path. */
+		/**
+		 * Configuration property name for message endpoint path.
+		 *
+		 * @see #getMessageEndpoint()
+		 */
 		String MESSAGE_ENDPOINT = "message-endpoint";
 
-		/** Configuration property name for SSE endpoint path. */
+		/**
+		 * Configuration property name for SSE endpoint path.
+		 *
+		 * @see #getSseEndpoint()
+		 */
 		String SSE_ENDPOINT = "sse-endpoint";
 
-		/** Configuration property name for keep-alive interval in seconds. */
+		/**
+		 * Configuration property name for keep-alive interval in seconds.
+		 *
+		 * @see #getKeepAliveInterval()
+		 */
 		String KEEP_ALIVE_INTERVAL = "keep-alive-interval";
 
 		/**

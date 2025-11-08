@@ -117,6 +117,34 @@ Build output includes:
 - Docker build scripts in `src/main/docker/`
 - Debian package configurations in `src/main/deb/`
 
+## Coding Conventions
+
+### Configuration Property Constants
+
+When defining configuration property name constants in service configuration interfaces, always include a `@see` JavaDoc reference to the corresponding getter method.
+
+**Pattern:**
+```java
+public interface Config<I extends MyService> extends ConfiguredManagedClass.Config<I> {
+
+    /**
+     * Configuration property name for my property.
+     *
+     * @see #getMyProperty()
+     */
+    String MY_PROPERTY = "my-property";
+
+    /**
+     * Description of what this property does.
+     */
+    @Name(MY_PROPERTY)
+    @StringDefault("default value")
+    String getMyProperty();
+}
+```
+
+**Rationale:** This creates bidirectional documentation between the property name constant and its getter, making it easier to navigate and understand the configuration interface.
+
 ## Notes
 
 - Build artifacts are excluded from Git (in `.gitignore`)
