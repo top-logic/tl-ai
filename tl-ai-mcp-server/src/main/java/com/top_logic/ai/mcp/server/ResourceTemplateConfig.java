@@ -154,30 +154,35 @@ public interface ResourceTemplateConfig extends PolymorphicConfiguration<Configu
 	 * TL-Script expression to compute the resource content.
 	 *
 	 * <p>
-	 * The script receives parameters extracted from the URI template as positional arguments.
-	 * Parameters are passed in the order they appear in the URI template. For example, if the
-	 * URI template is {@code "myapp://data/{itemId}/{version}"} and a request comes for
-	 * {@code "myapp://data/12345/v2"}, the script receives {@code "12345"} as the first
-	 * argument and {@code "v2"} as the second argument.
+	 * The expression has access to parameters extracted from the URI template as implicit
+	 * variables. The expression is automatically wrapped in a function that declares parameters
+	 * matching the URI template parameter names, making them available within the expression.
 	 * </p>
 	 *
 	 * <p>
-	 * The script should return a string containing the resource content. The content will
+	 * For example, if the URI template is {@code "myapp://data/{itemId}/{version}"} and a
+	 * request comes for {@code "myapp://data/12345/v2"}, the expression is executed as if
+	 * wrapped in: {@code itemId, version -> yourExpression}, where {@code $itemId} has value
+	 * {@code "12345"} and {@code $version} has value {@code "v2"}.
+	 * </p>
+	 *
+	 * <p>
+	 * The expression should return a string containing the resource content. The content will
 	 * be served with the configured MIME type.
 	 * </p>
 	 *
 	 * <p>
-	 * Example for single parameter:
+	 * Example for single parameter (URI template: {@code "myapp://data/{itemId}"}):
 	 * </p>
 	 * <pre>
-	 * itemId -&gt; $myService.getItem($itemId).toJson()
+	 * $myService.getItem($itemId).toJson()
 	 * </pre>
 	 *
 	 * <p>
-	 * Example for multiple parameters:
+	 * Example for multiple parameters (URI template: {@code "myapp://data/{itemId}/{version}"}):
 	 * </p>
 	 * <pre>
-	 * itemId, version -&gt; $myService.getItem($itemId, $version).toJson()
+	 * $myService.getItem($itemId, $version).toJson()
 	 * </pre>
 	 */
 	@Name(CONTENT)

@@ -9,6 +9,7 @@ import java.util.Map;
 import com.top_logic.basic.config.AbstractConfiguredInstance;
 import com.top_logic.basic.config.InstantiationContext;
 import com.top_logic.basic.thread.ThreadContextManager;
+import com.top_logic.model.search.expr.config.dom.Expr;
 import com.top_logic.model.search.expr.query.QueryExecutor;
 
 import io.modelcontextprotocol.server.McpServerFeatures;
@@ -33,6 +34,8 @@ public class ConfigurableResourceTemplate extends AbstractConfiguredInstance<Res
 
 	private final UriPattern _uriPattern;
 
+	private final QueryExecutor _compiledFunction;
+
 	/**
 	 * Creates a {@link ConfigurableResourceTemplate}.
 	 *
@@ -44,6 +47,33 @@ public class ConfigurableResourceTemplate extends AbstractConfiguredInstance<Res
 	public ConfigurableResourceTemplate(InstantiationContext context, ResourceTemplateConfig config) {
 		super(context, config);
 		_uriPattern = UriPattern.compile(config.getUriTemplate());
+		_compiledFunction = compileFunction(config.getContent(), _uriPattern.getParameterNames());
+	}
+
+	/**
+	 * Compiles the user's TL-Script expression into a function that declares the URI parameters.
+	 *
+	 * <p>
+	 * Wraps the user's expression in nested functions, one for each parameter from the URI
+	 * template. Each parameter is declared using
+	 * {@link com.top_logic.model.search.expr.config.dom.Expr.Define#create(String, Expr)}.
+	 * </p>
+	 *
+	 * @param bodyExpr
+	 *        The user's expression to use as the function body.
+	 * @param parameterNames
+	 *        The parameter names from the URI template, in order.
+	 * @return The compiled function.
+	 */
+	private static QueryExecutor compileFunction(Expr bodyExpr, List<String> parameterNames) {
+		// Wrap the body expression in nested functions, one for each parameter
+		// Build from the inside out: for params [a, b], create: a -> (b -> body)
+		Expr wrappedExpr = bodyExpr;
+		for (int i = parameterNames.size() - 1; i >= 0; i--) {
+			String paramName = parameterNames.get(i);
+			wrappedExpr = Expr.Define.create(paramName, wrappedExpr);
+		}
+		return QueryExecutor.compile(wrappedExpr);
 	}
 
 	@Override
@@ -112,8 +142,16 @@ public class ConfigurableResourceTemplate extends AbstractConfiguredInstance<Res
 		// Extract parameters from URI
 		Map<String, String> parameters = _uriPattern.extractParameters(uri);
 
-		// Execute TL-Script expression with parameters
-		Object result = QueryExecutor.compile(getConfig().getContent()).execute(parameters.values().toArray());
+		// Build argument array in the order of parameter names
+		List<String> parameterNames = _uriPattern.getParameterNames();
+		Object[] arguments = new Object[parameterNames.size()];
+		for (int i = 0; i < parameterNames.size(); i++) {
+			String paramName = parameterNames.get(i);
+			arguments[i] = parameters.get(paramName);
+		}
+
+		// Execute compiled function with parameters as arguments
+		Object result = _compiledFunction.execute(arguments);
 
 		// Convert result to string
 		String content = result != null ? result.toString() : "";
