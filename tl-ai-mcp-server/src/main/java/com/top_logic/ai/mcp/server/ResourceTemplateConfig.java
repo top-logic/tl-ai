@@ -167,8 +167,21 @@ public interface ResourceTemplateConfig extends PolymorphicConfiguration<Configu
 	 * </p>
 	 *
 	 * <p>
-	 * The expression should return a string containing the resource content. The content will
-	 * be served with the configured MIME type.
+	 * The expression can return different types, which are handled as follows:
+	 * </p>
+	 * <ul>
+	 * <li>{@link com.top_logic.basic.io.BinaryContent} - Content is served with the binary
+	 * content's own content type</li>
+	 * <li>{@link Map} - Serialized as JSON with {@code application/json} content type</li>
+	 * <li>{@link com.top_logic.base.services.simpleajax.HTMLFragment} - Rendered to HTML string
+	 * with {@code text/html} content type</li>
+	 * <li>Any other value - Converted to string using {@code toString()} with
+	 * {@code text/plain} content type</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * If a MIME type is explicitly configured via {@link #getMimeType()}, it overrides the
+	 * default content type for the return type.
 	 * </p>
 	 *
 	 * <p>
@@ -183,6 +196,13 @@ public interface ResourceTemplateConfig extends PolymorphicConfiguration<Configu
 	 * </p>
 	 * <pre>
 	 * $myService.getItem($itemId, $version).toJson()
+	 * </pre>
+	 *
+	 * <p>
+	 * Example returning a Map (will be serialized as JSON):
+	 * </p>
+	 * <pre>
+	 * map("id" -> $itemId, "data" -> $myService.getItem($itemId))
 	 * </pre>
 	 */
 	@Name(CONTENT)

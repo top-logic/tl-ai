@@ -3,12 +3,18 @@
  */
 package com.top_logic.ai.mcp.server;
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.Map;
 
+import com.top_logic.base.services.simpleajax.HTMLFragment;
 import com.top_logic.basic.config.AbstractConfiguredInstance;
 import com.top_logic.basic.config.InstantiationContext;
+import com.top_logic.basic.io.binary.BinaryDataSource;
+import com.top_logic.basic.json.JSON;
 import com.top_logic.basic.thread.ThreadContextManager;
+import com.top_logic.basic.xml.TagWriter;
 import com.top_logic.model.search.expr.config.dom.Expr;
 import com.top_logic.model.search.expr.query.QueryExecutor;
 
@@ -153,22 +159,100 @@ public class ConfigurableResourceTemplate extends AbstractConfiguredInstance<Res
 		// Execute compiled function with parameters as arguments
 		Object result = _compiledFunction.execute(arguments);
 
-		// Convert result to string
-		String content = result != null ? result.toString() : "";
-
-		// Determine MIME type
-		String mimeType = getConfig().getMimeType();
-		if (mimeType == null) {
-			mimeType = "text/plain";
-		}
-
-		// Create resource contents
-		McpSchema.TextResourceContents contents = new McpSchema.TextResourceContents(
-			uri,
-			mimeType,
-			content
-		);
+		// Handle different result types
+		McpSchema.ResourceContents contents = createResourceContents(uri, result);
 
 		return new McpSchema.ReadResourceResult(List.of(contents));
+	}
+
+	/**
+	 * Creates resource contents from the script result, handling different return types.
+	 *
+	 * @param uri
+	 *        The resource URI.
+	 * @param result
+	 *        The result from executing the TL-Script expression.
+	 * @return The resource contents with appropriate content type.
+	 */
+	private McpSchema.ResourceContents createResourceContents(String uri, Object result) {
+		// Handle null result
+		if (result == null) {
+			String mimeType = getConfiguredMimeType("text/plain");
+			return new McpSchema.TextResourceContents(uri, mimeType, "");
+		}
+
+		// Handle BinaryDataSource - use its content type
+		if (result instanceof BinaryDataSource binaryData) {
+			try {
+				String content = binaryData.toString(); // Read as string for MCP text protocol
+				String mimeType = getConfiguredMimeType(binaryData.getContentType());
+				return new McpSchema.TextResourceContents(uri, mimeType, content);
+			} catch (Exception ex) {
+				throw new RuntimeException("Failed to read binary content: " + ex.getMessage(), ex);
+			}
+		}
+
+		// Handle Map - serialize as JSON
+		if (result instanceof Map) {
+			String content = serializeMapAsJson((Map<?, ?>) result);
+			String mimeType = getConfiguredMimeType("application/json");
+			return new McpSchema.TextResourceContents(uri, mimeType, content);
+		}
+
+		// Handle HTMLFragment - render to HTML string
+		if (result instanceof HTMLFragment htmlFragment) {
+			String content = renderHtmlFragment(htmlFragment);
+			String mimeType = getConfiguredMimeType("text/html");
+			return new McpSchema.TextResourceContents(uri, mimeType, content);
+		}
+
+		// Default: convert to string using toString()
+		String content = result.toString();
+		String mimeType = getConfiguredMimeType("text/plain");
+		return new McpSchema.TextResourceContents(uri, mimeType, content);
+	}
+
+	/**
+	 * Returns the configured MIME type, or the provided default if none is configured.
+	 *
+	 * @param defaultMimeType
+	 *        The default MIME type to use if none is configured.
+	 * @return The MIME type to use.
+	 */
+	private String getConfiguredMimeType(String defaultMimeType) {
+		String configured = getConfig().getMimeType();
+		return configured != null ? configured : defaultMimeType;
+	}
+
+	/**
+	 * Serializes a Map as JSON.
+	 *
+	 * @param map
+	 *        The map to serialize.
+	 * @return The JSON string representation.
+	 */
+	private String serializeMapAsJson(Map<?, ?> map) {
+		try {
+			return JSON.toString(map);
+		} catch (Exception ex) {
+			throw new RuntimeException("Failed to serialize map as JSON: " + ex.getMessage(), ex);
+		}
+	}
+
+	/**
+	 * Renders an HTMLFragment to an HTML string.
+	 *
+	 * @param fragment
+	 *        The HTML fragment to render.
+	 * @return The rendered HTML string.
+	 */
+	private String renderHtmlFragment(HTMLFragment fragment) {
+		StringWriter buffer = new StringWriter();
+		try (TagWriter writer = new TagWriter(buffer)) {
+			fragment.write(null, writer);
+		} catch (IOException ex) {
+			throw new RuntimeException("Failed to render HTML fragment: " + ex.getMessage(), ex);
+		}
+		return buffer.toString();
 	}
 }
