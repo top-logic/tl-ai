@@ -14,6 +14,7 @@ import jakarta.activation.MimeTypeParseException;
 import com.top_logic.base.services.simpleajax.HTMLFragment;
 import com.top_logic.basic.config.AbstractConfiguredInstance;
 import com.top_logic.basic.config.InstantiationContext;
+import com.top_logic.basic.io.StreamUtilities;
 import com.top_logic.basic.io.binary.BinaryDataSource;
 import com.top_logic.basic.json.JSON;
 import com.top_logic.basic.thread.ThreadContextManager;
@@ -190,14 +191,16 @@ public class ConfigurableResourceTemplate extends AbstractConfiguredInstance<Res
 				String contentType = binaryData.getContentType();
 				String mimeType = getConfiguredMimeType(contentType);
 
+				// Read binary data into byte array
+				byte[] bytes = StreamUtilities.readStreamContents(binaryData);
+
 				// Check if content type is text-based
 				if (isTextContentType(contentType)) {
 					// Read as text for text-based content types
-					String content = new String(binaryData.toByteArray(), java.nio.charset.StandardCharsets.UTF_8);
+					String content = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
 					return new McpSchema.TextResourceContents(uri, mimeType, content);
 				} else {
-					// Read binary data and encode as base64 for blob transport
-					byte[] bytes = binaryData.toByteArray();
+					// Encode as base64 for blob transport
 					String base64Content = java.util.Base64.getEncoder().encodeToString(bytes);
 					return new McpSchema.BlobResourceContents(uri, mimeType, base64Content);
 				}
