@@ -6,6 +6,7 @@ package com.top_logic.ai.mcp.server.completions;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.top_logic.ai.mcp.server.resources.ModuleTypesResource;
 import com.top_logic.basic.thread.ThreadContextManager;
 import com.top_logic.model.TLModel;
 import com.top_logic.model.TLModule;
@@ -48,7 +49,7 @@ public class ModuleNameCompletion {
 	 */
 	public static McpServerFeatures.SyncCompletionSpecification createSpecification() {
 		McpSchema.ResourceReference reference = new McpSchema.ResourceReference(
-			"toplogic://model/modules/{moduleName}/types"
+			ModuleTypesResource.URI_TEMPLATE
 		);
 
 		return new McpServerFeatures.SyncCompletionSpecification(
