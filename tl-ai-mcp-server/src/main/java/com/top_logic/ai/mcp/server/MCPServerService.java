@@ -41,20 +41,18 @@ import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
 
 /**
  * TopLogic service that provides an MCP (Model Context Protocol) server for exposing
- * application-specific APIs to AI models via HTTP/SSE transport.
+ * application-specific APIs to AI models via HTTP transport.
  *
  * <p>
- * This service initializes an MCP server during application startup using HTTP Server-Sent
- * Events (SSE) transport and ensures proper cleanup during shutdown. The server can be
- * configured through the TopLogic application configuration.
+ * This service initializes an MCP server during application startup using the MCP protocol
+ * over HTTP and ensures proper cleanup during shutdown. The server can be configured through
+ * the TopLogic application configuration.
  * </p>
  *
  * <p>
- * The service exposes two HTTP endpoints (registered in web-fragment.xml under /mcp/*):
- * <ul>
- * <li>SSE endpoint: /mcp/sse - For server-to-client event streaming</li>
- * <li>Message endpoint: /mcp/message - For client-to-server messages</li>
- * </ul>
+ * The service exposes HTTP endpoints (registered in web-fragment.xml under /mcp/*) that
+ * implement the MCP protocol for bidirectional communication between AI clients and the
+ * TopLogic application.
  * </p>
  *
  * <p>
