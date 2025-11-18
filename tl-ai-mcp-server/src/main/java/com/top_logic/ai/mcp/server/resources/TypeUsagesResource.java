@@ -7,10 +7,10 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.top_logic.ai.mcp.server.UriPattern;
 import com.top_logic.basic.thread.ThreadContextManager;
 import com.top_logic.common.json.gstream.JsonWriter;
 import com.top_logic.model.TLClass;
@@ -66,7 +66,7 @@ public class TypeUsagesResource {
 	 * any characters except slashes.
 	 * </p>
 	 */
-	private static final Pattern URI_PATTERN = ModuleTypesResource.createUriPattern(URI_TEMPLATE);
+	private static final UriPattern URI_PATTERN = UriPattern.compile(URI_TEMPLATE);
 
 	/** Resource name template. */
 	private static final String NAME_TEMPLATE = "type-usages-{qualifiedTypeName}";
@@ -136,7 +136,8 @@ public class TypeUsagesResource {
 	private static McpSchema.ReadResourceResult readTypeUsages(McpSchema.ReadResourceRequest request) {
 		// Extract qualified type name from URI
 		String uri = request.uri();
-		String qualifiedTypeName = extractQualifiedTypeName(uri);
+		Map<String, String> parameters = URI_PATTERN.extractParameters(uri);
+		String qualifiedTypeName = parameters.get("qualifiedTypeName");
 
 		// Get the application model and find the requested type
 		TLModel model = ModelService.getApplicationModel();
@@ -189,22 +190,6 @@ public class TypeUsagesResource {
 		);
 
 		return new McpSchema.ReadResourceResult(List.of(contents));
-	}
-
-	/**
-	 * Extracts the qualified type name from a URI like
-	 * {@code toplogic://model/types/tl.core:TLObject/usages}.
-	 *
-	 * @param uri
-	 *        The full URI.
-	 * @return The qualified type name (e.g., "tl.core:TLObject").
-	 */
-	private static String extractQualifiedTypeName(String uri) {
-		Matcher matcher = URI_PATTERN.matcher(uri);
-		if (!matcher.matches()) {
-			throw new IllegalArgumentException("Invalid type usages URI: " + uri);
-		}
-		return matcher.group(1);
 	}
 
 	/**

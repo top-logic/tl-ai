@@ -6,10 +6,10 @@ package com.top_logic.ai.mcp.server.resources;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.top_logic.ai.mcp.server.UriPattern;
 import com.top_logic.basic.util.ResKey;
 import com.top_logic.basic.thread.ThreadContextManager;
 import com.top_logic.common.json.gstream.JsonWriter;
@@ -66,7 +66,7 @@ public class TypePartsResource {
 	 * Derived from {@link #URI_TEMPLATE} by replacing template variables with capture groups.
 	 * </p>
 	 */
-	private static final Pattern URI_PATTERN = ModuleTypesResource.createUriPattern(URI_TEMPLATE);
+	private static final UriPattern URI_PATTERN = UriPattern.compile(URI_TEMPLATE);
 
 	/** Resource name template. */
 	private static final String NAME_TEMPLATE = "type-parts-{moduleName}-{typeName}";
@@ -136,9 +136,9 @@ public class TypePartsResource {
 	private static McpSchema.ReadResourceResult readTypeParts(McpSchema.ReadResourceRequest request) {
 		// Extract module name and type name from URI
 		String uri = request.uri();
-		String[] names = extractNames(uri);
-		String moduleName = names[0];
-		String typeName = names[1];
+		Map<String, String> parameters = URI_PATTERN.extractParameters(uri);
+		String moduleName = parameters.get("moduleName");
+		String typeName = parameters.get("typeName");
 
 		// Get the application model and find the requested module
 		TLModel model = ModelService.getApplicationModel();
@@ -235,22 +235,6 @@ public class TypePartsResource {
 		);
 
 		return new McpSchema.ReadResourceResult(List.of(contents));
-	}
-
-	/**
-	 * Extracts the module name and type name from a URI like
-	 * {@code toplogic://model/modules/tl.core/types/TLObject/parts}.
-	 *
-	 * @param uri
-	 *        The full URI.
-	 * @return Array with [moduleName, typeName].
-	 */
-	private static String[] extractNames(String uri) {
-		Matcher matcher = URI_PATTERN.matcher(uri);
-		if (!matcher.matches()) {
-			throw new IllegalArgumentException("Invalid type parts URI: " + uri);
-		}
-		return new String[] { matcher.group(1), matcher.group(2) };
 	}
 
 }
