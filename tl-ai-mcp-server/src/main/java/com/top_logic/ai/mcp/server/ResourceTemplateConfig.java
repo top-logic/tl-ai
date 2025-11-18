@@ -170,8 +170,9 @@ public interface ResourceTemplateConfig extends PolymorphicConfiguration<Configu
 	 * The expression can return different types, which are handled as follows:
 	 * </p>
 	 * <ul>
-	 * <li>{@link com.top_logic.basic.io.BinaryContent} - Content is served with the binary
-	 * content's own content type</li>
+	 * <li>{@link com.top_logic.basic.io.binary.BinaryDataSource} - Binary content is encoded
+	 * as base64 and served with the binary data's own content type (e.g., {@code application/pdf}
+	 * for PDF documents)</li>
 	 * <li>{@link Map} - Serialized as JSON with {@code application/json} content type</li>
 	 * <li>{@link com.top_logic.base.services.simpleajax.HTMLFragment} - Rendered to HTML string
 	 * with {@code text/html} content type</li>

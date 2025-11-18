@@ -181,12 +181,14 @@ public class ConfigurableResourceTemplate extends AbstractConfiguredInstance<Res
 			return new McpSchema.TextResourceContents(uri, mimeType, "");
 		}
 
-		// Handle BinaryDataSource - use its content type
+		// Handle BinaryDataSource - use BlobResourceContents for binary data
 		if (result instanceof BinaryDataSource binaryData) {
 			try {
-				String content = binaryData.toString(); // Read as string for MCP text protocol
+				// Read binary data and encode as base64 for blob transport
+				byte[] bytes = binaryData.toByteArray();
+				String base64Content = java.util.Base64.getEncoder().encodeToString(bytes);
 				String mimeType = getConfiguredMimeType(binaryData.getContentType());
-				return new McpSchema.TextResourceContents(uri, mimeType, content);
+				return new McpSchema.BlobResourceContents(uri, mimeType, base64Content);
 			} catch (Exception ex) {
 				throw new RuntimeException("Failed to read binary content: " + ex.getMessage(), ex);
 			}
