@@ -56,8 +56,14 @@ import io.modelcontextprotocol.spec.McpSchema;
  */
 public class TypePartsResource {
 
+	/** Parameter name for module name in URI template. */
+	private static final String PARAM_MODULE_NAME = "moduleName";
+
+	/** Parameter name for type name in URI template. */
+	private static final String PARAM_TYPE_NAME = "typeName";
+
 	/** URI template for type parts resource. */
-	public static final String URI_TEMPLATE = "toplogic://model/modules/{moduleName}/types/{typeName}/parts";
+	public static final String URI_TEMPLATE = "toplogic://model/modules/{" + PARAM_MODULE_NAME + "}/types/{" + PARAM_TYPE_NAME + "}/parts";
 
 	/**
 	 * Pattern for extracting module name and type name from URI.
@@ -69,7 +75,7 @@ public class TypePartsResource {
 	private static final UriPattern URI_PATTERN = UriPattern.compile(URI_TEMPLATE);
 
 	/** Resource name template. */
-	private static final String NAME_TEMPLATE = "type-parts-{moduleName}-{typeName}";
+	private static final String NAME_TEMPLATE = "type-parts-{" + PARAM_MODULE_NAME + "}-{" + PARAM_TYPE_NAME + "}";
 
 	/** Resource description. */
 	private static final String DESCRIPTION = "List of parts (properties and references) in a TopLogic type";
@@ -137,8 +143,8 @@ public class TypePartsResource {
 		// Extract module name and type name from URI
 		String uri = request.uri();
 		Map<String, String> parameters = URI_PATTERN.extractParameters(uri);
-		String moduleName = parameters.get("moduleName");
-		String typeName = parameters.get("typeName");
+		String moduleName = parameters.get(PARAM_MODULE_NAME);
+		String typeName = parameters.get(PARAM_TYPE_NAME);
 
 		// Get the application model and find the requested module
 		TLModel model = ModelService.getApplicationModel();

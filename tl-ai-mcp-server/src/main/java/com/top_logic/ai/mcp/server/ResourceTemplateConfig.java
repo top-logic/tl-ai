@@ -154,10 +154,11 @@ public interface ResourceTemplateConfig extends PolymorphicConfiguration<Configu
 	 * TL-Script expression to compute the resource content.
 	 *
 	 * <p>
-	 * The script receives parameters extracted from the URI template as variables.
-	 * For example, if the URI template is {@code "myapp://data/{itemId}"} and a request
-	 * comes for {@code "myapp://data/12345"}, the script will have access to a variable
-	 * {@code itemId} with value {@code "12345"}.
+	 * The script receives parameters extracted from the URI template as positional arguments.
+	 * Parameters are passed in the order they appear in the URI template. For example, if the
+	 * URI template is {@code "myapp://data/{itemId}/{version}"} and a request comes for
+	 * {@code "myapp://data/12345/v2"}, the script receives {@code "12345"} as the first
+	 * argument and {@code "v2"} as the second argument.
 	 * </p>
 	 *
 	 * <p>
@@ -166,10 +167,17 @@ public interface ResourceTemplateConfig extends PolymorphicConfiguration<Configu
 	 * </p>
 	 *
 	 * <p>
-	 * Example:
+	 * Example for single parameter:
 	 * </p>
 	 * <pre>
-	 * item -&gt; $item.toJson()
+	 * itemId -&gt; $myService.getItem($itemId).toJson()
+	 * </pre>
+	 *
+	 * <p>
+	 * Example for multiple parameters:
+	 * </p>
+	 * <pre>
+	 * itemId, version -&gt; $myService.getItem($itemId, $version).toJson()
 	 * </pre>
 	 */
 	@Name(CONTENT)

@@ -55,8 +55,11 @@ import io.modelcontextprotocol.spec.McpSchema;
  */
 public class ModuleTypesResource {
 
+	/** Parameter name for module name in URI template. */
+	private static final String PARAM_MODULE_NAME = "moduleName";
+
 	/** URI template for module types resource. */
-	public static final String URI_TEMPLATE = "toplogic://model/modules/{moduleName}/types";
+	public static final String URI_TEMPLATE = "toplogic://model/modules/{" + PARAM_MODULE_NAME + "}/types";
 
 	/**
 	 * Pattern for extracting module name from URI.
@@ -68,7 +71,7 @@ public class ModuleTypesResource {
 	private static final UriPattern URI_PATTERN = UriPattern.compile(URI_TEMPLATE);
 
 	/** Resource name template. */
-	private static final String NAME_TEMPLATE = "module-types-{moduleName}";
+	private static final String NAME_TEMPLATE = "module-types-{" + PARAM_MODULE_NAME + "}";
 
 	/** Resource description. */
 	private static final String DESCRIPTION = "List of types in a TopLogic module";
@@ -136,7 +139,7 @@ public class ModuleTypesResource {
 		// Extract module name from URI
 		String uri = request.uri();
 		Map<String, String> parameters = URI_PATTERN.extractParameters(uri);
-		String moduleName = parameters.get("moduleName");
+		String moduleName = parameters.get(PARAM_MODULE_NAME);
 
 		// Get the application model and find the requested module
 		TLModel model = ModelService.getApplicationModel();

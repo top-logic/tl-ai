@@ -54,8 +54,11 @@ import io.modelcontextprotocol.spec.McpSchema;
  */
 public class TypeUsagesResource {
 
+	/** Parameter name for qualified type name in URI template. */
+	private static final String PARAM_QUALIFIED_TYPE_NAME = "qualifiedTypeName";
+
 	/** URI template for type usages resource. */
-	public static final String URI_TEMPLATE = "toplogic://model/types/{qualifiedTypeName}/usages";
+	public static final String URI_TEMPLATE = "toplogic://model/types/{" + PARAM_QUALIFIED_TYPE_NAME + "}/usages";
 
 	/**
 	 * Pattern for extracting qualified type name from URI.
@@ -69,7 +72,7 @@ public class TypeUsagesResource {
 	private static final UriPattern URI_PATTERN = UriPattern.compile(URI_TEMPLATE);
 
 	/** Resource name template. */
-	private static final String NAME_TEMPLATE = "type-usages-{qualifiedTypeName}";
+	private static final String NAME_TEMPLATE = "type-usages-{" + PARAM_QUALIFIED_TYPE_NAME + "}";
 
 	/** Resource description. */
 	private static final String DESCRIPTION = "Find usages of a TopLogic type (properties and subclasses)";
@@ -137,7 +140,7 @@ public class TypeUsagesResource {
 		// Extract qualified type name from URI
 		String uri = request.uri();
 		Map<String, String> parameters = URI_PATTERN.extractParameters(uri);
-		String qualifiedTypeName = parameters.get("qualifiedTypeName");
+		String qualifiedTypeName = parameters.get(PARAM_QUALIFIED_TYPE_NAME);
 
 		// Get the application model and find the requested type
 		TLModel model = ModelService.getApplicationModel();
