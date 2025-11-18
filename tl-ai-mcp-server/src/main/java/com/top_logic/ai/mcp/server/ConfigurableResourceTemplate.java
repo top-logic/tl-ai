@@ -176,7 +176,8 @@ public class ConfigurableResourceTemplate extends AbstractConfiguredInstance<Res
 	 *
 	 * <p>
 	 * If the result is a {@link Collection}, each element is converted to a separate
-	 * {@link McpSchema.ResourceContents} item. Otherwise, a single-item list is returned.
+	 * {@link io.modelcontextprotocol.spec.McpSchema.ResourceContents} item. Otherwise, a
+	 * single-item list is returned.
 	 * </p>
 	 *
 	 * @param uri
