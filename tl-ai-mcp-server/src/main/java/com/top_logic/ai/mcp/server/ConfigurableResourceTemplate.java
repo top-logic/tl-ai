@@ -8,6 +8,9 @@ import java.io.StringWriter;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.activation.MimeType;
+import jakarta.activation.MimeTypeParseException;
+
 import com.top_logic.base.services.simpleajax.HTMLFragment;
 import com.top_logic.basic.config.AbstractConfiguredInstance;
 import com.top_logic.basic.config.InstantiationContext;
@@ -227,7 +230,7 @@ public class ConfigurableResourceTemplate extends AbstractConfiguredInstance<Res
 	 * Checks if a content type is text-based.
 	 *
 	 * @param contentType
-	 *        The content type to check.
+	 *        The content type string to check.
 	 * @return {@code true} if the content type is text-based, {@code false} otherwise.
 	 */
 	private boolean isTextContentType(String contentType) {
@@ -235,17 +238,34 @@ public class ConfigurableResourceTemplate extends AbstractConfiguredInstance<Res
 			return false;
 		}
 
-		// Normalize content type (remove parameters like charset)
-		String baseType = contentType.split(";")[0].trim().toLowerCase();
+		try {
+			MimeType mimeType = new MimeType(contentType);
+			String primaryType = mimeType.getPrimaryType();
+			String subType = mimeType.getSubType();
 
-		// Check for text-based content types
-		return baseType.startsWith("text/") ||
-			baseType.equals("application/json") ||
-			baseType.equals("application/xml") ||
-			baseType.equals("application/javascript") ||
-			baseType.equals("application/x-javascript") ||
-			baseType.endsWith("+xml") ||
-			baseType.endsWith("+json");
+			// Check for text-based content types
+			if ("text".equals(primaryType)) {
+				return true;
+			}
+
+			if ("application".equals(primaryType)) {
+				// Check for text-based application types
+				if ("json".equals(subType) || "xml".equals(subType) ||
+					"javascript".equals(subType) || "x-javascript".equals(subType)) {
+					return true;
+				}
+
+				// Check for structured text formats (e.g., application/foo+json, application/bar+xml)
+				if (subType.endsWith("+json") || subType.endsWith("+xml")) {
+					return true;
+				}
+			}
+
+			return false;
+		} catch (MimeTypeParseException ex) {
+			// If we can't parse the MIME type, treat it as binary to be safe
+			return false;
+		}
 	}
 
 	/**
