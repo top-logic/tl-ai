@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 My Company. All Rights Reserved
  */
-package com.top_logic.ai.mcp.server;
+package com.top_logic.ai.mcp.server.dynamic;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -13,6 +13,7 @@ import java.util.Map;
 import jakarta.activation.MimeType;
 import jakarta.activation.MimeTypeParseException;
 
+import com.top_logic.ai.mcp.server.UriPattern;
 import com.top_logic.base.services.simpleajax.HTMLFragment;
 import com.top_logic.basic.config.AbstractConfiguredInstance;
 import com.top_logic.basic.config.InstantiationContext;

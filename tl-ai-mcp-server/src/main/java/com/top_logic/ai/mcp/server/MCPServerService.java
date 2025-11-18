@@ -14,6 +14,8 @@ import jakarta.servlet.ServletRegistration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.top_logic.ai.mcp.server.completions.ModuleNameCompletion;
+import com.top_logic.ai.mcp.server.dynamic.ConfigurableResourceTemplate;
+import com.top_logic.ai.mcp.server.dynamic.DynamicResource;
 import com.top_logic.ai.mcp.server.resources.ModelModulesResource;
 import com.top_logic.ai.mcp.server.resources.ModuleTypesResource;
 import com.top_logic.ai.mcp.server.resources.TypePartsResource;

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 My Company. All Rights Reserved
  */
-package com.top_logic.ai.mcp.server;
+package com.top_logic.ai.mcp.server.dynamic;
 
 import io.modelcontextprotocol.server.McpServerFeatures;
 
