@@ -3,16 +3,11 @@
  */
 package com.top_logic.ai.mcp.server;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.top_logic.basic.config.AbstractConfiguredInstance;
 import com.top_logic.basic.config.InstantiationContext;
-import com.top_logic.basic.config.PolymorphicConfiguration;
 import com.top_logic.basic.thread.ThreadContextManager;
 import com.top_logic.model.search.expr.query.QueryExecutor;
 
@@ -36,9 +31,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 public class ConfigurableResourceTemplate extends AbstractConfiguredInstance<ResourceTemplateConfig>
 		implements DynamicResource {
 
-	private final Pattern _uriPattern;
-
-	private final List<String> _parameterNames;
+	private final UriPattern _uriPattern;
 
 	/**
 	 * Creates a {@link ConfigurableResourceTemplate}.
@@ -50,8 +43,7 @@ public class ConfigurableResourceTemplate extends AbstractConfiguredInstance<Res
 	 */
 	public ConfigurableResourceTemplate(InstantiationContext context, ResourceTemplateConfig config) {
 		super(context, config);
-		_parameterNames = new ArrayList<>();
-		_uriPattern = createUriPattern(config.getUriTemplate(), _parameterNames);
+		_uriPattern = UriPattern.compile(config.getUriTemplate());
 	}
 
 	@Override
@@ -118,7 +110,7 @@ public class ConfigurableResourceTemplate extends AbstractConfiguredInstance<Res
 		String uri = request.uri();
 
 		// Extract parameters from URI
-		Map<String, Object> parameters = extractParameters(uri);
+		Map<String, String> parameters = _uriPattern.extractParameters(uri);
 
 		// Execute TL-Script expression with parameters
 		Object result = QueryExecutor.compile(getConfig().getContent()).execute(parameters.values().toArray());
@@ -140,82 +132,5 @@ public class ConfigurableResourceTemplate extends AbstractConfiguredInstance<Res
 		);
 
 		return new McpSchema.ReadResourceResult(List.of(contents));
-	}
-
-	/**
-	 * Extracts parameter values from a URI based on the configured URI template.
-	 *
-	 * @param uri
-	 *        The full URI (e.g., "myapp://data/12345").
-	 * @return A map of parameter names to their values.
-	 */
-	private Map<String, Object> extractParameters(String uri) {
-		Matcher matcher = _uriPattern.matcher(uri);
-		if (!matcher.matches()) {
-			throw new IllegalArgumentException("URI does not match template: " + uri);
-		}
-
-		Map<String, Object> parameters = new HashMap<>();
-		for (int i = 0; i < _parameterNames.size(); i++) {
-			String paramName = _parameterNames.get(i);
-			String paramValue = matcher.group(i + 1);
-			parameters.put(paramName, paramValue);
-		}
-
-		return parameters;
-	}
-
-	/**
-	 * Creates a regex pattern from a URI template by replacing template variables with capture
-	 * groups and collecting parameter names.
-	 *
-	 * <p>
-	 * Template variables in the format {@code {variableName}} are replaced with the regex
-	 * {@code ([^/]+)} which captures one or more non-slash characters. The variable names
-	 * are collected in order into the provided list.
-	 * </p>
-	 *
-	 * @param template
-	 *        The URI template string (e.g., "myapp://data/{itemId}").
-	 * @param parameterNames
-	 *        Output list that will be filled with parameter names in order.
-	 * @return A compiled Pattern that can match and extract variables from URIs.
-	 */
-	private static Pattern createUriPattern(String template, List<String> parameterNames) {
-		StringBuilder patternBuilder = new StringBuilder();
-		int pos = 0;
-
-		while (pos < template.length()) {
-			int varStart = template.indexOf('{', pos);
-
-			if (varStart == -1) {
-				// No more variables, quote the remaining literal part
-				patternBuilder.append(Pattern.quote(template.substring(pos)));
-				break;
-			}
-
-			// Quote the literal part before the variable
-			if (varStart > pos) {
-				patternBuilder.append(Pattern.quote(template.substring(pos, varStart)));
-			}
-
-			// Find the end of the variable
-			int varEnd = template.indexOf('}', varStart);
-			if (varEnd == -1) {
-				throw new IllegalArgumentException("Unclosed variable in template: " + template);
-			}
-
-			// Extract variable name
-			String varName = template.substring(varStart + 1, varEnd);
-			parameterNames.add(varName);
-
-			// Add capture group for the variable
-			patternBuilder.append("([^/]+)");
-
-			// Move past the variable
-			pos = varEnd + 1;
-		}
-
-		return Pattern.compile(patternBuilder.toString());
 	}
 }
