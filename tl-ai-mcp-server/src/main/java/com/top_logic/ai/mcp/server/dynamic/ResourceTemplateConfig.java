@@ -9,6 +9,9 @@ import com.top_logic.basic.config.PolymorphicConfiguration;
 import com.top_logic.basic.config.annotation.Mandatory;
 import com.top_logic.basic.config.annotation.Name;
 import com.top_logic.basic.config.annotation.Nullable;
+import com.top_logic.basic.config.order.DisplayOrder;
+import com.top_logic.layout.form.values.MultiLineText;
+import com.top_logic.layout.form.values.edit.annotation.ControlProvider;
 import com.top_logic.model.search.expr.config.dom.Expr;
 
 /**
@@ -40,6 +43,14 @@ import com.top_logic.model.search.expr.config.dom.Expr;
  *
  * @author Bernhard Haumacher
  */
+@DisplayOrder({
+	ResourceTemplateConfig.TITLE,
+	ResourceTemplateConfig.DESCRIPTION,
+	ResourceTemplateConfig.URI_TEMPLATE,
+	ResourceTemplateConfig.NAME,
+	ResourceTemplateConfig.CONTENT,
+	ResourceTemplateConfig.MIME_TYPE,
+})
 public interface ResourceTemplateConfig extends PolymorphicConfiguration<ConfigurableResourceTemplate> {
 
 	/**
@@ -133,6 +144,7 @@ public interface ResourceTemplateConfig extends PolymorphicConfiguration<Configu
 	 */
 	@Name(DESCRIPTION)
 	@Nullable
+	@ControlProvider(MultiLineText.class)
 	String getDescription();
 
 	/**

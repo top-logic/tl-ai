@@ -25,6 +25,9 @@ import com.top_logic.basic.config.PolymorphicConfiguration;
 import com.top_logic.basic.config.annotation.Name;
 import com.top_logic.basic.config.annotation.defaults.LongDefault;
 import com.top_logic.basic.config.annotation.defaults.StringDefault;
+import com.top_logic.basic.config.order.DisplayInherited;
+import com.top_logic.basic.config.order.DisplayInherited.DisplayStrategy;
+import com.top_logic.basic.config.order.DisplayOrder;
 import com.top_logic.basic.module.ConfiguredManagedClass;
 import com.top_logic.basic.module.ServiceDependencies;
 import com.top_logic.basic.module.TypedRuntimeModule;
@@ -75,6 +78,13 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 	/**
 	 * Configuration interface for {@link MCPServerService}.
 	 */
+	@DisplayOrder({
+		Config.SERVER_NAME,
+		Config.SERVER_VERSION,
+		Config.KEEP_ALIVE_INTERVAL,
+		Config.DYNAMIC_RESOURCES,
+	})
+	@DisplayInherited(DisplayStrategy.PREPEND)
 	public interface Config<I extends MCPServerService> extends ConfiguredManagedClass.Config<I> {
 
 		/**
