@@ -5,6 +5,8 @@ package com.top_logic.ai.mcp.server;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -164,9 +166,37 @@ public class ConfigurableResourceTemplate extends AbstractConfiguredInstance<Res
 		Object result = _compiledFunction.execute(arguments);
 
 		// Handle different result types
-		McpSchema.ResourceContents contents = createResourceContents(uri, result);
+		List<McpSchema.ResourceContents> contentsList = createResourceContentsList(uri, result);
 
-		return new McpSchema.ReadResourceResult(List.of(contents));
+		return new McpSchema.ReadResourceResult(contentsList);
+	}
+
+	/**
+	 * Creates a list of resource contents from the script result.
+	 *
+	 * <p>
+	 * If the result is a {@link Collection}, each element is converted to a separate
+	 * {@link McpSchema.ResourceContents} item. Otherwise, a single-item list is returned.
+	 * </p>
+	 *
+	 * @param uri
+	 *        The resource URI.
+	 * @param result
+	 *        The result from executing the TL-Script expression.
+	 * @return List of resource contents.
+	 */
+	private List<McpSchema.ResourceContents> createResourceContentsList(String uri, Object result) {
+		// Handle Collection - create multiple resource contents
+		if (result instanceof Collection<?> collection) {
+			List<McpSchema.ResourceContents> contentsList = new ArrayList<>(collection.size());
+			for (Object item : collection) {
+				contentsList.add(createResourceContents(uri, item));
+			}
+			return contentsList;
+		}
+
+		// Single result - wrap in list
+		return List.of(createResourceContents(uri, result));
 	}
 
 	/**

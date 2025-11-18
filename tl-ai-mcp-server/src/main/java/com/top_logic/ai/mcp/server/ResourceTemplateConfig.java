@@ -3,6 +3,8 @@
  */
 package com.top_logic.ai.mcp.server;
 
+import java.util.Map;
+
 import com.top_logic.basic.config.PolymorphicConfiguration;
 import com.top_logic.basic.config.annotation.Mandatory;
 import com.top_logic.basic.config.annotation.Name;
@@ -170,6 +172,9 @@ public interface ResourceTemplateConfig extends PolymorphicConfiguration<Configu
 	 * The expression can return different types, which are handled as follows:
 	 * </p>
 	 * <ul>
+	 * <li>{@link java.util.Collection} - Each element is converted to a separate
+	 * {@link io.modelcontextprotocol.spec.McpSchema.ResourceContents} item in the result list,
+	 * allowing a single resource template to return multiple resource contents</li>
 	 * <li>{@link com.top_logic.basic.io.binary.BinaryDataSource} - Content type is checked:
 	 * text-based types (e.g., {@code text/*}, {@code application/json}, {@code application/xml})
 	 * are served as text, while binary types (e.g., {@code application/pdf}, {@code image/*})
