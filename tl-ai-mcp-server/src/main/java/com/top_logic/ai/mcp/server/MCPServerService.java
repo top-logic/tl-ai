@@ -242,6 +242,35 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 
 		// Register completion handler for module name parameter
 		builder.completions(ModuleNameCompletion.createSpecification());
+
+//		String uriTemplate;
+//		String name;
+//		String title;
+//		String description;
+//		String mimeType;
+//		Annotations annotations = new Annotations(Collections.singletonList(Role.ASSISTANT), 1.0);
+//		ResourceTemplate template = new ResourceTemplate(uriTemplate, name, title, description, mimeType, annotations);
+//		BiFunction<McpSyncServerExchange, ReadResourceRequest, ReadResourceResult> handler = (exchange, request) -> {
+//			String uri;
+//			String mimeType;
+//			String text;
+//			ResourceContents content = new TextResourceContents(uri, mimeType, text);
+//			List<ResourceContents> contents = Collections.singletonList(content);
+//			return new ReadResourceResult(contents);
+//		};
+//		builder.resourceTemplates(new SyncResourceTemplateSpecification(template, handler));
+
+//		JsonSchema inputSchema = null;
+//		BiFunction<McpSyncServerExchange, CallToolRequest, CallToolResult> handler = (exchange, request) -> {
+//			request.arguments();
+//
+//			Content content = ResourceLink.builder().build();
+//			return CallToolResult.builder()
+//				.addContent(content)
+//				.build();
+//		};
+//
+//		builder.toolCall(Tool.builder().inputSchema(inputSchema).build(), handler);
 	}
 
 	@Override
