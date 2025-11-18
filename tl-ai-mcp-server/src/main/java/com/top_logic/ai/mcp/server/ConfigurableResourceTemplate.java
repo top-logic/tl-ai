@@ -181,14 +181,23 @@ public class ConfigurableResourceTemplate extends AbstractConfiguredInstance<Res
 			return new McpSchema.TextResourceContents(uri, mimeType, "");
 		}
 
-		// Handle BinaryDataSource - use BlobResourceContents for binary data
+		// Handle BinaryDataSource - check if text-based or binary
 		if (result instanceof BinaryDataSource binaryData) {
 			try {
-				// Read binary data and encode as base64 for blob transport
-				byte[] bytes = binaryData.toByteArray();
-				String base64Content = java.util.Base64.getEncoder().encodeToString(bytes);
-				String mimeType = getConfiguredMimeType(binaryData.getContentType());
-				return new McpSchema.BlobResourceContents(uri, mimeType, base64Content);
+				String contentType = binaryData.getContentType();
+				String mimeType = getConfiguredMimeType(contentType);
+
+				// Check if content type is text-based
+				if (isTextContentType(contentType)) {
+					// Read as text for text-based content types
+					String content = new String(binaryData.toByteArray(), java.nio.charset.StandardCharsets.UTF_8);
+					return new McpSchema.TextResourceContents(uri, mimeType, content);
+				} else {
+					// Read binary data and encode as base64 for blob transport
+					byte[] bytes = binaryData.toByteArray();
+					String base64Content = java.util.Base64.getEncoder().encodeToString(bytes);
+					return new McpSchema.BlobResourceContents(uri, mimeType, base64Content);
+				}
 			} catch (Exception ex) {
 				throw new RuntimeException("Failed to read binary content: " + ex.getMessage(), ex);
 			}
@@ -212,6 +221,31 @@ public class ConfigurableResourceTemplate extends AbstractConfiguredInstance<Res
 		String content = result.toString();
 		String mimeType = getConfiguredMimeType("text/plain");
 		return new McpSchema.TextResourceContents(uri, mimeType, content);
+	}
+
+	/**
+	 * Checks if a content type is text-based.
+	 *
+	 * @param contentType
+	 *        The content type to check.
+	 * @return {@code true} if the content type is text-based, {@code false} otherwise.
+	 */
+	private boolean isTextContentType(String contentType) {
+		if (contentType == null) {
+			return false;
+		}
+
+		// Normalize content type (remove parameters like charset)
+		String baseType = contentType.split(";")[0].trim().toLowerCase();
+
+		// Check for text-based content types
+		return baseType.startsWith("text/") ||
+			baseType.equals("application/json") ||
+			baseType.equals("application/xml") ||
+			baseType.equals("application/javascript") ||
+			baseType.equals("application/x-javascript") ||
+			baseType.endsWith("+xml") ||
+			baseType.endsWith("+json");
 	}
 
 	/**
