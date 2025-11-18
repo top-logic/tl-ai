@@ -174,10 +174,10 @@ public interface ResourceTemplateConfig extends PolymorphicConfiguration<Configu
 	 * </p>
 	 *
 	 * <p>
-	 * For example, if the URI template is {@code "myapp://data/{itemId}/{version}"} and a
-	 * request comes for {@code "myapp://data/12345/v2"}, the expression is executed as if
-	 * wrapped in: {@code itemId, version -> yourExpression}, where {@code $itemId} has value
-	 * {@code "12345"} and {@code $version} has value {@code "v2"}.
+	 * For example, if the URI template is {@code "myapp://item/{itemId}/version/{version}"}
+	 * and a request comes for {@code "myapp://item/12345/version/v2"}, the expression is
+	 * executed as if wrapped in: {@code itemId -> version -> yourExpression}, where
+	 * {@code $itemId} has value {@code "12345"} and {@code $version} has value {@code "v2"}.
 	 * </p>
 	 *
 	 * <p>
@@ -204,14 +204,15 @@ public interface ResourceTemplateConfig extends PolymorphicConfiguration<Configu
 	 * </p>
 	 *
 	 * <p>
-	 * Example for single parameter (URI template: {@code "myapp://data/{itemId}"}):
+	 * Example for single parameter (URI template: {@code "myapp://item/{itemId}"}):
 	 * </p>
 	 * <pre>
 	 * $myService.getItem($itemId).toJson()
 	 * </pre>
 	 *
 	 * <p>
-	 * Example for multiple parameters (URI template: {@code "myapp://data/{itemId}/{version}"}):
+	 * Example for multiple parameters (URI template:
+	 * {@code "myapp://item/{itemId}/version/{version}"}):
 	 * </p>
 	 * <pre>
 	 * $myService.getItem($itemId, $version).toJson()
