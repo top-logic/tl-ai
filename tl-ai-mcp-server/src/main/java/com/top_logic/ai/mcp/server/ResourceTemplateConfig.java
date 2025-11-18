@@ -1,0 +1,178 @@
+/*
+ * Copyright (c) 2025 My Company. All Rights Reserved
+ */
+package com.top_logic.ai.mcp.server;
+
+import com.top_logic.basic.config.ConfigurationItem;
+import com.top_logic.basic.config.annotation.Mandatory;
+import com.top_logic.basic.config.annotation.Name;
+import com.top_logic.basic.config.annotation.Nullable;
+import com.top_logic.model.search.expr.config.dom.Expr;
+
+/**
+ * Configuration for a dynamic MCP resource template.
+ *
+ * <p>
+ * Defines a resource template with static metadata (name, title, description, MIME type)
+ * and dynamic content generation through a TL-Script expression. The script receives
+ * parameters extracted from the resource URI template.
+ * </p>
+ *
+ * <p>
+ * Example configuration:
+ * </p>
+ * <pre>
+ * &lt;resource-template
+ *     uri-template="myapp://data/{itemId}"
+ *     name="item-data-{itemId}"
+ *     title="Item Data"
+ *     description="Retrieve data for a specific item"
+ *     mime-type="application/json"&gt;
+ *     &lt;content&gt;
+ *         &lt;!-- TL-Script expression to compute resource content --&gt;
+ *         &lt;!-- Parameters from URI are available as variables --&gt;
+ *         item -> $item.toJson()
+ *     &lt;/content&gt;
+ * &lt;/resource-template&gt;
+ * </pre>
+ *
+ * @author Bernhard Haumacher
+ */
+public interface ResourceTemplateConfig extends ConfigurationItem {
+
+	/**
+	 * Configuration property name for URI template.
+	 *
+	 * @see #getUriTemplate()
+	 */
+	String URI_TEMPLATE = "uri-template";
+
+	/**
+	 * Configuration property name for resource name template.
+	 *
+	 * @see #getName()
+	 */
+	String NAME = "name";
+
+	/**
+	 * Configuration property name for resource title.
+	 *
+	 * @see #getTitle()
+	 */
+	String TITLE = "title";
+
+	/**
+	 * Configuration property name for resource description.
+	 *
+	 * @see #getDescription()
+	 */
+	String DESCRIPTION = "description";
+
+	/**
+	 * Configuration property name for MIME type.
+	 *
+	 * @see #getMimeType()
+	 */
+	String MIME_TYPE = "mime-type";
+
+	/**
+	 * Configuration property name for content expression.
+	 *
+	 * @see #getContent()
+	 */
+	String CONTENT = "content";
+
+	/**
+	 * URI template with parameter placeholders.
+	 *
+	 * <p>
+	 * The template uses the format {@code scheme://path/{param1}/{param2}} where parameters
+	 * are enclosed in curly braces. These parameters will be extracted from the URI and passed
+	 * to the TL-Script expression.
+	 * </p>
+	 *
+	 * <p>
+	 * Example: {@code "myapp://data/{itemId}"}
+	 * </p>
+	 */
+	@Name(URI_TEMPLATE)
+	@Mandatory
+	String getUriTemplate();
+
+	/**
+	 * Resource name template.
+	 *
+	 * <p>
+	 * Can include parameter placeholders like {@code "item-data-{itemId}"} which will be
+	 * replaced with actual values from the URI.
+	 * </p>
+	 */
+	@Name(NAME)
+	@Mandatory
+	String getName();
+
+	/**
+	 * Human-readable title for the resource.
+	 *
+	 * <p>
+	 * This is displayed to users/agents browsing available resources.
+	 * </p>
+	 */
+	@Name(TITLE)
+	@Nullable
+	String getTitle();
+
+	/**
+	 * Description of what this resource provides.
+	 *
+	 * <p>
+	 * Should explain what data the resource returns and what parameters it expects.
+	 * </p>
+	 */
+	@Name(DESCRIPTION)
+	@Nullable
+	String getDescription();
+
+	/**
+	 * MIME type of the resource content.
+	 *
+	 * <p>
+	 * Common values:
+	 * </p>
+	 * <ul>
+	 * <li>{@code "application/json"} - JSON data</li>
+	 * <li>{@code "text/plain"} - Plain text</li>
+	 * <li>{@code "text/html"} - HTML content</li>
+	 * <li>{@code "text/markdown"} - Markdown content</li>
+	 * </ul>
+	 */
+	@Name(MIME_TYPE)
+	@Nullable
+	String getMimeType();
+
+	/**
+	 * TL-Script expression to compute the resource content.
+	 *
+	 * <p>
+	 * The script receives parameters extracted from the URI template as variables.
+	 * For example, if the URI template is {@code "myapp://data/{itemId}"} and a request
+	 * comes for {@code "myapp://data/12345"}, the script will have access to a variable
+	 * {@code itemId} with value {@code "12345"}.
+	 * </p>
+	 *
+	 * <p>
+	 * The script should return a string containing the resource content. The content will
+	 * be served with the configured MIME type.
+	 * </p>
+	 *
+	 * <p>
+	 * Example:
+	 * </p>
+	 * <pre>
+	 * item -&gt; $item.toJson()
+	 * </pre>
+	 */
+	@Name(CONTENT)
+	@Mandatory
+	Expr getContent();
+}

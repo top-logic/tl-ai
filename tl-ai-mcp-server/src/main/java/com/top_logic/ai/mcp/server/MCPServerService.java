@@ -4,6 +4,7 @@
 package com.top_logic.ai.mcp.server;
 
 import java.time.Duration;
+import java.util.List;
 
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletContext;
@@ -95,6 +96,13 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 		String KEEP_ALIVE_INTERVAL = "keep-alive-interval";
 
 		/**
+		 * Configuration property name for resource templates.
+		 *
+		 * @see #getResourceTemplates()
+		 */
+		String RESOURCE_TEMPLATES = "resource-templates";
+
+		/**
 		 * The name of the MCP server.
 		 */
 		@Name(SERVER_NAME)
@@ -116,6 +124,18 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 		@Name(KEEP_ALIVE_INTERVAL)
 		@LongDefault(30)
 		long getKeepAliveInterval();
+
+		/**
+		 * List of configurable resource templates.
+		 *
+		 * <p>
+		 * Each template defines a dynamic resource with static metadata (name, title, description,
+		 * MIME type) and content computed by a TL-Script expression. The script receives parameters
+		 * extracted from the URI template.
+		 * </p>
+		 */
+		@Name(RESOURCE_TEMPLATES)
+		List<ResourceTemplateConfig> getResourceTemplates();
 	}
 
 	private static volatile MCPServerService _instance;
@@ -222,6 +242,10 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 	 * <li>{@link ModuleNameCompletion} - Provides completions for module name parameters</li>
 	 * </ul>
 	 *
+	 * <p>
+	 * Additionally registers any configured resource templates from the service configuration.
+	 * </p>
+	 *
 	 * @param builder
 	 *        The MCP server builder to configure.
 	 */
@@ -243,34 +267,11 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 		// Register completion handler for module name parameter
 		builder.completions(ModuleNameCompletion.createSpecification());
 
-//		String uriTemplate;
-//		String name;
-//		String title;
-//		String description;
-//		String mimeType;
-//		Annotations annotations = new Annotations(Collections.singletonList(Role.ASSISTANT), 1.0);
-//		ResourceTemplate template = new ResourceTemplate(uriTemplate, name, title, description, mimeType, annotations);
-//		BiFunction<McpSyncServerExchange, ReadResourceRequest, ReadResourceResult> handler = (exchange, request) -> {
-//			String uri;
-//			String mimeType;
-//			String text;
-//			ResourceContents content = new TextResourceContents(uri, mimeType, text);
-//			List<ResourceContents> contents = Collections.singletonList(content);
-//			return new ReadResourceResult(contents);
-//		};
-//		builder.resourceTemplates(new SyncResourceTemplateSpecification(template, handler));
-
-//		JsonSchema inputSchema = null;
-//		BiFunction<McpSyncServerExchange, CallToolRequest, CallToolResult> handler = (exchange, request) -> {
-//			request.arguments();
-//
-//			Content content = ResourceLink.builder().build();
-//			return CallToolResult.builder()
-//				.addContent(content)
-//				.build();
-//		};
-//
-//		builder.toolCall(Tool.builder().inputSchema(inputSchema).build(), handler);
+		// Register configured resource templates
+		for (ResourceTemplateConfig templateConfig : getConfig().getResourceTemplates()) {
+			ConfigurableResourceTemplate template = new ConfigurableResourceTemplate(templateConfig);
+			builder.resourceTemplates(template.createSpecification());
+		}
 	}
 
 	@Override
