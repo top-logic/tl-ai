@@ -6,7 +6,9 @@ package com.top_logic.ai.mcp.server;
 import java.time.Duration;
 
 import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRegistration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -27,7 +29,8 @@ import com.top_logic.basic.module.services.ServletContextService;
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpSyncServer;
-import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportProvider;
+import io.modelcontextprotocol.server.transport.HttpServletStreamableServerTransportProvider;
+import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
 
 /**
  * TopLogic service that provides an MCP (Model Context Protocol) server for exposing
@@ -60,21 +63,10 @@ import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportPro
 })
 public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Config<?>> {
 
-	/**
-	 * Base URL prefix for MCP endpoints.
-	 *
-	 * <p>
-	 * Set to empty string because the full base URL (including context path) is
-	 * constructed dynamically at runtime using {@link ServletContextService}.
-	 * </p>
-	 */
-	private static final String BASE_URL = "";
+	private static final String MCP_TRANSPORT_SERVLET_NAME = "MCPTransportServlet";
 
-	/** Path for the SSE endpoint (must match web.xml servlet mapping /mcp/*). */
-	private static final String SSE_ENDPOINT = "/mcp/sse";
-
-	/** Path for the message endpoint (must match web.xml servlet mapping /mcp/*). */
-	private static final String MESSAGE_ENDPOINT = "/mcp/message";
+	/** Path for the MCP endpoint (must match web.xml servlet mapping /mcp). */
+	private static final String MCP_ENDPOINT = "/mcp";
 
 	/**
 	 * Configuration interface for {@link MCPServerService}.
@@ -130,7 +122,7 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 
 	private McpSyncServer _mcpServer;
 
-	private HttpServletSseServerTransportProvider _transportProvider;
+	private HttpServletStreamableServerTransportProvider _transportProvider;
 
 	/**
 	 * Creates a new {@link MCPServerService} from configuration.
@@ -165,33 +157,32 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 
 			// Get the servlet context from ServletContextService
 			jakarta.servlet.ServletContext servletContext = ServletContextService.getInstance().getServletContext();
-			String contextPath = servletContext.getContextPath();
 
 			// Create HTTP SSE transport provider with fixed endpoints matching web-fragment.xml
 			// The baseUrl includes the context path so clients receive the correct absolute endpoint URLs
-			_transportProvider = HttpServletSseServerTransportProvider.builder()
+			_transportProvider = HttpServletStreamableServerTransportProvider.builder()
 				.jsonMapper(new JacksonMcpJsonMapper(new ObjectMapper()))
-				.baseUrl(contextPath + BASE_URL)
-				.messageEndpoint(MESSAGE_ENDPOINT)
-				.sseEndpoint(SSE_ENDPOINT)
+				.mcpEndpoint(MCP_ENDPOINT)
 				.keepAliveInterval(Duration.ofSeconds(config.getKeepAliveInterval()))
 				.build();
 
-			// Register the transport servlet dynamically with async support
-			jakarta.servlet.ServletRegistration.Dynamic registration =
-				servletContext.addServlet("MCPTransportServlet", _transportProvider);
+			ServletRegistration registration = servletContext.getServletRegistration(MCP_TRANSPORT_SERVLET_NAME);
+			if (registration == null) {
+				jakarta.servlet.ServletRegistration.Dynamic newRegistration =
+					servletContext.addServlet(MCP_TRANSPORT_SERVLET_NAME, _transportProvider);
+				if (newRegistration != null) {
+					// Configure async support - required for SSE
+					newRegistration.setAsyncSupported(true);
 
-			if (registration != null) {
-				// Configure async support - required for SSE
-				registration.setAsyncSupported(true);
-
-				// Map to /mcp/* URL pattern
-				registration.addMapping("/mcp/*");
+					// Map to /mcp/* URL pattern
+					newRegistration.addMapping(MCP_ENDPOINT);
+				}
+				registration = newRegistration;
 			}
 
 			// Initialize the servlet
 			try {
-				_transportProvider.init(new ServletConfigAdapter());
+				_transportProvider.init(new ServletConfigAdapter(servletContext));
 			} catch (ServletException ex) {
 				throw new RuntimeException("Failed to initialize MCP transport servlet: " + ex.getMessage(), ex);
 			}
@@ -235,6 +226,8 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 	 *        The MCP server builder to configure.
 	 */
 	protected void configureServer(McpServer.SyncSpecification<?> builder) {
+		builder.capabilities(ServerCapabilities.builder().resources(true, true).build());
+
 		// Register resource for listing TopLogic model modules
 		builder.resources(ModelModulesResource.createSpecification());
 
@@ -298,6 +291,15 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 	 */
 	private static class ServletConfigAdapter implements ServletConfig {
 
+		private ServletContext _servletContext;
+
+		/**
+		 * Creates a {@link ServletConfigAdapter}.
+		 */
+		public ServletConfigAdapter(ServletContext servletContext) {
+			_servletContext = servletContext;
+		}
+
 		@Override
 		public String getServletName() {
 			return "MCPServerTransport";
@@ -305,8 +307,7 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 
 		@Override
 		public jakarta.servlet.ServletContext getServletContext() {
-			// Not needed for basic initialization
-			return null;
+			return _servletContext;
 		}
 
 		@Override
