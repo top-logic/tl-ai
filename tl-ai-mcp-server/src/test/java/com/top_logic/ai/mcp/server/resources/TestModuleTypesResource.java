@@ -95,7 +95,11 @@ public class TestModuleTypesResource extends TestCase {
 	 * Helper method to assert that a URI does NOT match the pattern.
 	 */
 	private void assertNoMatch(UriPattern uriPattern, String uri) {
-		Map<String, String> params = uriPattern.extractParameters(uri);
-		assertNull("URI should NOT match: " + uri, params);
+		try {
+			uriPattern.extractParameters(uri);
+			fail("URI should NOT match but did: " + uri);
+		} catch (IllegalArgumentException ex) {
+			// Expected - URI does not match the pattern
+		}
 	}
 }
