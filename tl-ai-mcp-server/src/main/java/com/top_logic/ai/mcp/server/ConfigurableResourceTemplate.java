@@ -10,6 +10,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.top_logic.basic.config.AbstractConfiguredInstance;
+import com.top_logic.basic.config.InstantiationContext;
+import com.top_logic.basic.config.PolymorphicConfiguration;
 import com.top_logic.basic.thread.ThreadContextManager;
 import com.top_logic.model.search.expr.query.QueryExecutor;
 
@@ -18,8 +21,8 @@ import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 
 /**
- * Handler for configurable MCP resource templates that use TL-Script expressions
- * to dynamically generate resource content.
+ * Implementation of {@link DynamicResource} that uses TL-Script expressions to dynamically
+ * generate resource content.
  *
  * <p>
  * This class bridges the configuration-based resource template definition
@@ -30,9 +33,8 @@ import io.modelcontextprotocol.spec.McpSchema;
  *
  * @author Bernhard Haumacher
  */
-public class ConfigurableResourceTemplate {
-
-	private final ResourceTemplateConfig _config;
+public class ConfigurableResourceTemplate extends AbstractConfiguredInstance<ResourceTemplateConfig>
+		implements DynamicResource {
 
 	private final Pattern _uriPattern;
 
@@ -41,36 +43,34 @@ public class ConfigurableResourceTemplate {
 	/**
 	 * Creates a {@link ConfigurableResourceTemplate}.
 	 *
+	 * @param context
+	 *        The instantiation context for error reporting.
 	 * @param config
 	 *        The resource template configuration.
 	 */
-	public ConfigurableResourceTemplate(ResourceTemplateConfig config) {
-		_config = config;
+	public ConfigurableResourceTemplate(InstantiationContext context, ResourceTemplateConfig config) {
+		super(context, config);
 		_parameterNames = new ArrayList<>();
 		_uriPattern = createUriPattern(config.getUriTemplate(), _parameterNames);
 	}
 
-	/**
-	 * Creates the MCP resource template specification for this configurable resource.
-	 *
-	 * @return The resource template specification that can be registered with the MCP server.
-	 */
+	@Override
 	public McpServerFeatures.SyncResourceTemplateSpecification createSpecification() {
 		McpSchema.ResourceTemplate.Builder builder = McpSchema.ResourceTemplate.builder()
-			.uriTemplate(_config.getUriTemplate())
-			.name(_config.getName());
+			.uriTemplate(getConfig().getUriTemplate())
+			.name(getConfig().getName());
 
 		// Add optional metadata
-		if (_config.getTitle() != null) {
-			builder.name(_config.getTitle());
+		if (getConfig().getTitle() != null) {
+			builder.name(getConfig().getTitle());
 		}
 
-		if (_config.getDescription() != null) {
-			builder.description(_config.getDescription());
+		if (getConfig().getDescription() != null) {
+			builder.description(getConfig().getDescription());
 		}
 
-		if (_config.getMimeType() != null) {
-			builder.mimeType(_config.getMimeType());
+		if (getConfig().getMimeType() != null) {
+			builder.mimeType(getConfig().getMimeType());
 		}
 
 		McpSchema.ResourceTemplate template = builder.build();
@@ -121,13 +121,13 @@ public class ConfigurableResourceTemplate {
 		Map<String, Object> parameters = extractParameters(uri);
 
 		// Execute TL-Script expression with parameters
-		Object result = QueryExecutor.compile(_config.getContent()).execute(parameters.values().toArray());
+		Object result = QueryExecutor.compile(getConfig().getContent()).execute(parameters.values().toArray());
 
 		// Convert result to string
 		String content = result != null ? result.toString() : "";
 
 		// Determine MIME type
-		String mimeType = _config.getMimeType();
+		String mimeType = getConfig().getMimeType();
 		if (mimeType == null) {
 			mimeType = "text/plain";
 		}

@@ -3,14 +3,14 @@
  */
 package com.top_logic.ai.mcp.server;
 
-import com.top_logic.basic.config.ConfigurationItem;
+import com.top_logic.basic.config.PolymorphicConfiguration;
 import com.top_logic.basic.config.annotation.Mandatory;
 import com.top_logic.basic.config.annotation.Name;
 import com.top_logic.basic.config.annotation.Nullable;
 import com.top_logic.model.search.expr.config.dom.Expr;
 
 /**
- * Configuration for a dynamic MCP resource template.
+ * Configuration for a dynamic MCP resource template that uses TL-Script expressions.
  *
  * <p>
  * Defines a resource template with static metadata (name, title, description, MIME type)
@@ -22,7 +22,7 @@ import com.top_logic.model.search.expr.config.dom.Expr;
  * Example configuration:
  * </p>
  * <pre>
- * &lt;resource-template
+ * &lt;resource-template class="com.top_logic.ai.mcp.server.ConfigurableResourceTemplate"
  *     uri-template="myapp://data/{itemId}"
  *     name="item-data-{itemId}"
  *     title="Item Data"
@@ -31,14 +31,14 @@ import com.top_logic.model.search.expr.config.dom.Expr;
  *     &lt;content&gt;
  *         &lt;!-- TL-Script expression to compute resource content --&gt;
  *         &lt;!-- Parameters from URI are available as variables --&gt;
- *         item -> $item.toJson()
+ *         itemId -> $item.toJson()
  *     &lt;/content&gt;
  * &lt;/resource-template&gt;
  * </pre>
  *
  * @author Bernhard Haumacher
  */
-public interface ResourceTemplateConfig extends ConfigurationItem {
+public interface ResourceTemplateConfig extends PolymorphicConfiguration<ConfigurableResourceTemplate> {
 
 	/**
 	 * Configuration property name for URI template.

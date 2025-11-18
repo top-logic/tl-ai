@@ -19,6 +19,7 @@ import com.top_logic.ai.mcp.server.resources.ModuleTypesResource;
 import com.top_logic.ai.mcp.server.resources.TypePartsResource;
 import com.top_logic.ai.mcp.server.resources.TypeUsagesResource;
 import com.top_logic.basic.config.InstantiationContext;
+import com.top_logic.basic.config.PolymorphicConfiguration;
 import com.top_logic.basic.config.annotation.Name;
 import com.top_logic.basic.config.annotation.defaults.LongDefault;
 import com.top_logic.basic.config.annotation.defaults.StringDefault;
@@ -96,11 +97,11 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 		String KEEP_ALIVE_INTERVAL = "keep-alive-interval";
 
 		/**
-		 * Configuration property name for resource templates.
+		 * Configuration property name for dynamic resources.
 		 *
-		 * @see #getResourceTemplates()
+		 * @see #getDynamicResources()
 		 */
-		String RESOURCE_TEMPLATES = "resource-templates";
+		String DYNAMIC_RESOURCES = "dynamic-resources";
 
 		/**
 		 * The name of the MCP server.
@@ -126,16 +127,19 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 		long getKeepAliveInterval();
 
 		/**
-		 * List of configurable resource templates.
+		 * List of configurable dynamic resources.
 		 *
 		 * <p>
-		 * Each template defines a dynamic resource with static metadata (name, title, description,
-		 * MIME type) and content computed by a TL-Script expression. The script receives parameters
-		 * extracted from the URI template.
+		 * Each resource is configured using the polymorphic configuration pattern, allowing
+		 * different implementations to provide MCP resources in different ways:
 		 * </p>
+		 * <ul>
+		 * <li>{@link ConfigurableResourceTemplate} - Uses TL-Script expressions to compute content</li>
+		 * <li>Future implementations can add other resource types (static, database-driven, etc.)</li>
+		 * </ul>
 		 */
-		@Name(RESOURCE_TEMPLATES)
-		List<ResourceTemplateConfig> getResourceTemplates();
+		@Name(DYNAMIC_RESOURCES)
+		List<PolymorphicConfiguration<? extends DynamicResource>> getDynamicResources();
 	}
 
 	private static volatile MCPServerService _instance;
@@ -267,10 +271,11 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 		// Register completion handler for module name parameter
 		builder.completions(ModuleNameCompletion.createSpecification());
 
-		// Register configured resource templates
-		for (ResourceTemplateConfig templateConfig : getConfig().getResourceTemplates()) {
-			ConfigurableResourceTemplate template = new ConfigurableResourceTemplate(templateConfig);
-			builder.resourceTemplates(template.createSpecification());
+		// Register configured dynamic resources
+		InstantiationContext context = new com.top_logic.basic.config.DefaultInstantiationContext(getClass());
+		for (PolymorphicConfiguration<? extends DynamicResource> resourceConfig : getConfig().getDynamicResources()) {
+			DynamicResource resource = context.getInstance(resourceConfig);
+			builder.resourceTemplates(resource.createSpecification());
 		}
 	}
 
