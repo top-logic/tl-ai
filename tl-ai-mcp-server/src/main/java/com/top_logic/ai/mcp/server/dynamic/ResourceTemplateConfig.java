@@ -9,6 +9,8 @@ import com.top_logic.basic.config.PolymorphicConfiguration;
 import com.top_logic.basic.config.annotation.Mandatory;
 import com.top_logic.basic.config.annotation.Name;
 import com.top_logic.basic.config.annotation.Nullable;
+import com.top_logic.basic.config.annotation.Ref;
+import com.top_logic.basic.config.constraint.annotation.Constraint;
 import com.top_logic.basic.config.order.DisplayOrder;
 import com.top_logic.layout.form.values.MultiLineText;
 import com.top_logic.layout.form.values.edit.annotation.ControlProvider;
@@ -227,5 +229,6 @@ public interface ResourceTemplateConfig extends PolymorphicConfiguration<Configu
 	 */
 	@Name(CONTENT)
 	@Mandatory
+	@Constraint(value = CheckWithTemplateParams.class, args = @Ref(URI_TEMPLATE))
 	Expr getContent();
 }
