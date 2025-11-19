@@ -9,7 +9,6 @@ import java.util.List;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRegistration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -67,8 +66,6 @@ import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
 	ServletContextService.Module.class
 })
 public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Config<?>> {
-
-	private static final String MCP_TRANSPORT_SERVLET_NAME = "MCPTransportServlet";
 
 	/** Path for the MCP endpoint (must match web.xml servlet mapping /mcp). */
 	private static final String MCP_ENDPOINT = "/mcp";
@@ -179,6 +176,15 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 		return _instance;
 	}
 
+	/**
+	 * Returns the HTTP transport provider for delegating servlet requests.
+	 *
+	 * @return The transport provider, or {@code null} if the service is not started.
+	 */
+	public HttpServletStreamableServerTransportProvider getTransportProvider() {
+		return _transportProvider;
+	}
+
 	@Override
 	protected void startUp() {
 		super.startUp();
@@ -189,36 +195,21 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 
 			Config<?> config = getConfig();
 
-			// Get the servlet context from ServletContextService
-			jakarta.servlet.ServletContext servletContext = ServletContextService.getInstance().getServletContext();
-
-			// Create HTTP SSE transport provider with fixed endpoints matching web-fragment.xml
-			// The baseUrl includes the context path so clients receive the correct absolute endpoint URLs
+			// Create HTTP transport provider
+			// Note: A statically registered servlet (MCPTransportServlet) delegates requests
+			// to this transport provider, so no dynamic servlet registration is needed.
 			_transportProvider = HttpServletStreamableServerTransportProvider.builder()
 				.jsonMapper(new JacksonMcpJsonMapper(new ObjectMapper()))
 				.mcpEndpoint(MCP_ENDPOINT)
 				.keepAliveInterval(Duration.ofSeconds(config.getKeepAliveInterval()))
 				.build();
 
-			ServletRegistration registration = servletContext.getServletRegistration(MCP_TRANSPORT_SERVLET_NAME);
-			if (registration == null) {
-				jakarta.servlet.ServletRegistration.Dynamic newRegistration =
-					servletContext.addServlet(MCP_TRANSPORT_SERVLET_NAME, _transportProvider);
-				if (newRegistration != null) {
-					// Configure async support - required for SSE
-					newRegistration.setAsyncSupported(true);
-
-					// Map to /mcp/* URL pattern
-					newRegistration.addMapping(MCP_ENDPOINT);
-				}
-				registration = newRegistration;
-			}
-
-			// Initialize the servlet
+			// Initialize the transport provider
+			jakarta.servlet.ServletContext servletContext = ServletContextService.getInstance().getServletContext();
 			try {
 				_transportProvider.init(new ServletConfigAdapter(servletContext));
 			} catch (ServletException ex) {
-				throw new RuntimeException("Failed to initialize MCP transport servlet: " + ex.getMessage(), ex);
+				throw new RuntimeException("Failed to initialize MCP transport provider: " + ex.getMessage(), ex);
 			}
 
 			// Create MCP server builder with sync API
@@ -312,7 +303,7 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 					_transportProvider.destroy();
 				} catch (Exception ex) {
 					// Log but don't fail shutdown
-					System.err.println("Error destroying MCP transport: " + ex.getMessage());
+					System.err.println("Error destroying MCP transport provider: " + ex.getMessage());
 				}
 				_transportProvider = null;
 			}
