@@ -14,6 +14,8 @@ import com.top_logic.basic.config.constraint.annotation.Constraint;
 import com.top_logic.basic.config.order.DisplayOrder;
 import com.top_logic.layout.form.values.MultiLineText;
 import com.top_logic.layout.form.values.edit.annotation.ControlProvider;
+import com.top_logic.layout.form.values.edit.annotation.PropertyEditor;
+import com.top_logic.layout.form.values.edit.editor.PlainEditor;
 import com.top_logic.model.search.expr.config.dom.Expr;
 
 /**
@@ -229,6 +231,7 @@ public interface ResourceTemplateConfig extends PolymorphicConfiguration<Configu
 	 */
 	@Name(CONTENT)
 	@Mandatory
+	@PropertyEditor(PlainEditor.class)
 	@Constraint(value = CheckWithTemplateParams.class, args = @Ref(URI_TEMPLATE))
 	Expr getContent();
 }
