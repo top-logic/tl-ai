@@ -18,6 +18,7 @@ import com.top_logic.ai.mcp.server.dynamic.DynamicResource;
 import com.top_logic.ai.mcp.server.resources.InstanceResource;
 import com.top_logic.ai.mcp.server.resources.ModelModulesResource;
 import com.top_logic.ai.mcp.server.resources.ModuleTypesResource;
+import com.top_logic.ai.mcp.server.resources.TypeInstancesResource;
 import com.top_logic.ai.mcp.server.resources.TypePartsResource;
 import com.top_logic.ai.mcp.server.resources.TypeUsagesResource;
 import com.top_logic.basic.config.InstantiationContext;
@@ -243,6 +244,7 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 	 * <ul>
 	 * <li>{@link ModelModulesResource} - Lists available data model modules</li>
 	 * <li>{@link InstanceResource} - Retrieves detailed information about a specific instance by its TID</li>
+	 * <li>{@link TypeInstancesResource} - Retrieves all instances of a specific type</li>
 	 * <li>{@link ModuleTypesResource} - Lists types within a specific module (dynamic resource template)</li>
 	 * <li>{@link TypePartsResource} - Lists parts within a specific type (dynamic resource template)</li>
 	 * <li>{@link TypeUsagesResource} - Finds usages of a specific type (dynamic resource template)</li>
@@ -264,6 +266,9 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 
 		// Register resource template for retrieving instance details by TID
 		builder.resourceTemplates(InstanceResource.createSpecification());
+
+		// Register resource template for retrieving all instances of a specific type
+		builder.resourceTemplates(TypeInstancesResource.createSpecification());
 
 		// Register resource template for listing types in a specific module
 		builder.resourceTemplates(ModuleTypesResource.createSpecification());
