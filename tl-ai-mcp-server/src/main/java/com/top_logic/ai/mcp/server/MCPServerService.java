@@ -21,6 +21,7 @@ import com.top_logic.ai.mcp.server.resources.ModuleTypesResource;
 import com.top_logic.ai.mcp.server.resources.TypeInstancesResource;
 import com.top_logic.ai.mcp.server.resources.TypePartsResource;
 import com.top_logic.ai.mcp.server.resources.TypeUsagesResource;
+import com.top_logic.ai.mcp.server.tools.ModuleCreationTool;
 import com.top_logic.basic.config.InstantiationContext;
 import com.top_logic.basic.config.PolymorphicConfiguration;
 import com.top_logic.basic.config.annotation.Name;
@@ -249,6 +250,7 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 	 * <li>{@link TypePartsResource} - Lists parts within a specific type (dynamic resource template)</li>
 	 * <li>{@link TypeUsagesResource} - Finds usages of a specific type (dynamic resource template)</li>
 	 * <li>{@link ModuleNameCompletion} - Provides completions for module name parameters</li>
+	 * <li>{@link ModuleCreationTool} - Creates new TopLogic modules</li>
 	 * </ul>
 	 *
 	 * <p>
@@ -259,7 +261,7 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 	 *        The MCP server builder to configure.
 	 */
 	protected void configureServer(McpServer.SyncSpecification<?> builder) {
-		builder.capabilities(ServerCapabilities.builder().resources(true, true).build());
+		builder.capabilities(ServerCapabilities.builder().resources(true, true).tools(true).build());
 
 		// Register resource for listing TopLogic model modules
 		builder.resources(ModelModulesResource.createSpecification());
@@ -281,6 +283,9 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 
 		// Register completion handler for module name parameter
 		builder.completions(ModuleNameCompletion.createSpecification());
+
+		// Register tool for creating modules
+		builder.tools(ModuleCreationTool.createSpecification());
 
 		// Register configured dynamic resources
 		InstantiationContext context = new com.top_logic.basic.config.DefaultInstantiationContext(getClass());
