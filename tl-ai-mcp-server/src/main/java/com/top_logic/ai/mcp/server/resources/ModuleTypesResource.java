@@ -11,8 +11,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.top_logic.ai.mcp.server.UriPattern;
+import com.top_logic.ai.mcp.server.util.JsonResponseBuilder;
 import com.top_logic.basic.thread.ThreadContextManager;
-import com.top_logic.basic.util.ResKey;
 import com.top_logic.common.json.gstream.JsonWriter;
 import com.top_logic.model.ModelKind;
 import com.top_logic.model.TLClass;
@@ -22,7 +22,6 @@ import com.top_logic.model.TLStructuredType;
 import com.top_logic.model.TLType;
 import com.top_logic.model.util.TLModelNamingConvention;
 import com.top_logic.model.util.TLModelUtil;
-import com.top_logic.util.Resources;
 import com.top_logic.util.model.ModelService;
 
 import io.modelcontextprotocol.server.McpServerFeatures;
@@ -77,7 +76,7 @@ public class ModuleTypesResource {
 	private static final String DESCRIPTION = "List of types in a TopLogic module";
 
 	/** MIME type for JSON content. */
-	private static final String MIME_TYPE = "application/json";
+	private static final String MIME_TYPE = JsonResponseBuilder.JSON_MIME_TYPE;
 
 	/**
 	 * Creates the MCP resource template specification for listing module types.
@@ -157,8 +156,7 @@ public class ModuleTypesResource {
 
 		// Build JSON array with type information using JsonWriter
 		StringWriter buffer = new StringWriter();
-		try (JsonWriter json = new JsonWriter(buffer)) {
-			json.setIndent("  ");
+		try (JsonWriter json = JsonResponseBuilder.createWriter(buffer)) {
 			json.beginArray();
 
 			for (TLType type : types) {
@@ -204,22 +202,8 @@ public class ModuleTypesResource {
 					}
 				}
 
-				// Get the resource key for the type (checks annotation and handles defaults)
-				ResKey typeKey = TLModelNamingConvention.getTypeLabelKey(type);
-				Resources resources = Resources.getInstance();
-
-				// Add label from the resource key (optional)
-				String label = resources.getString(typeKey, null);
-				if (label != null && !label.isEmpty()) {
-					json.name("label").value(label);
-				}
-
-				// Add description from tooltip sub-key (optional)
-				ResKey tooltipKey = typeKey.tooltip();
-				String description = resources.getString(tooltipKey, null);
-				if (description != null && !description.isEmpty()) {
-					json.name("description").value(description);
-				}
+				// Add label and description from type resource key (optional)
+				JsonResponseBuilder.writeLabelAndDescription(json, TLModelNamingConvention.getTypeLabelKey(type));
 
 				json.endObject();
 			}

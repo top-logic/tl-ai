@@ -8,14 +8,13 @@ import java.io.StringWriter;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.top_logic.ai.mcp.server.util.JsonResponseBuilder;
 import com.top_logic.basic.thread.ThreadContextManager;
-import com.top_logic.basic.util.ResKey;
 import com.top_logic.common.json.gstream.JsonWriter;
 import com.top_logic.model.ModelKind;
 import com.top_logic.model.TLModel;
 import com.top_logic.model.TLModule;
 import com.top_logic.model.visit.LabelVisitor;
-import com.top_logic.util.Resources;
 import com.top_logic.util.model.ModelService;
 
 import io.modelcontextprotocol.server.McpServerFeatures;
@@ -55,7 +54,7 @@ public class ModelModulesResource {
 	private static final String DESCRIPTION = "List of TopLogic data model modules";
 
 	/** MIME type for JSON content. */
-	private static final String MIME_TYPE = "application/json";
+	private static final String MIME_TYPE = JsonResponseBuilder.JSON_MIME_TYPE;
 
 	/**
 	 * Creates the MCP resource specification for listing model modules.
@@ -117,8 +116,7 @@ public class ModelModulesResource {
 
 		// Build JSON array with module information using JsonWriter
 		StringWriter buffer = new StringWriter();
-		try (JsonWriter json = new JsonWriter(buffer)) {
-			json.setIndent("  ");
+		try (JsonWriter json = JsonResponseBuilder.createWriter(buffer)) {
 			json.beginArray();
 
 			for (TLModule module : modules) {
@@ -131,22 +129,8 @@ public class ModelModulesResource {
 					.count();
 				json.name("typeCount").value(typeCount);
 
-				// Get the resource key for the module (handles defaults if no annotation)
-				ResKey moduleKey = LabelVisitor.getModuleResourceKey(module);
-				Resources resources = Resources.getInstance();
-
-				// Add label from the resource key (optional)
-				String label = resources.getString(moduleKey, null);
-				if (label != null && !label.isEmpty()) {
-					json.name("label").value(label);
-				}
-
-				// Add description from tooltip sub-key (optional)
-				ResKey tooltipKey = moduleKey.tooltip();
-				String description = resources.getString(tooltipKey, null);
-				if (description != null && !description.isEmpty()) {
-					json.name("description").value(description);
-				}
+				// Add label and description from module resource key (optional)
+				JsonResponseBuilder.writeLabelAndDescription(json, LabelVisitor.getModuleResourceKey(module));
 
 				json.endObject();
 			}

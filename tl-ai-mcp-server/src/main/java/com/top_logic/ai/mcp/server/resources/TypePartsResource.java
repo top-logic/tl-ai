@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.top_logic.ai.mcp.server.UriPattern;
-import com.top_logic.basic.util.ResKey;
+import com.top_logic.ai.mcp.server.util.JsonResponseBuilder;
 import com.top_logic.basic.thread.ThreadContextManager;
 import com.top_logic.common.json.gstream.JsonWriter;
 import com.top_logic.model.ModelKind;
@@ -21,7 +21,6 @@ import com.top_logic.model.TLStructuredTypePart;
 import com.top_logic.model.TLType;
 import com.top_logic.model.resources.TLTypePartResourceProvider;
 import com.top_logic.model.util.TLModelUtil;
-import com.top_logic.util.Resources;
 import com.top_logic.util.model.ModelService;
 
 import io.modelcontextprotocol.server.McpServerFeatures;
@@ -81,7 +80,7 @@ public class TypePartsResource {
 	private static final String DESCRIPTION = "List of parts (properties and references) in a TopLogic type";
 
 	/** MIME type for JSON content. */
-	private static final String MIME_TYPE = "application/json";
+	private static final String MIME_TYPE = JsonResponseBuilder.JSON_MIME_TYPE;
 
 	/**
 	 * Creates the MCP resource template specification for listing type parts.
@@ -176,8 +175,7 @@ public class TypePartsResource {
 
 		// Build JSON array with part information using JsonWriter
 		StringWriter buffer = new StringWriter();
-		try (JsonWriter json = new JsonWriter(buffer)) {
-			json.setIndent("  ");
+		try (JsonWriter json = JsonResponseBuilder.createWriter(buffer)) {
 			json.beginArray();
 
 			for (TLStructuredTypePart part : parts) {
@@ -209,22 +207,8 @@ public class TypePartsResource {
 				json.name("derived").value(part.isDerived());
 				json.name("override").value(part.isOverride());
 
-				// Get the resource key for the part (checks annotation and handles defaults)
-				ResKey partKey = TLTypePartResourceProvider.labelKey(part);
-				Resources resources = Resources.getInstance();
-
-				// Add label from the resource key (optional)
-				String label = resources.getString(partKey, null);
-				if (label != null && !label.isEmpty()) {
-					json.name("label").value(label);
-				}
-
-				// Add description from tooltip sub-key (optional)
-				ResKey tooltipKey = partKey.tooltip();
-				String description = resources.getString(tooltipKey, null);
-				if (description != null && !description.isEmpty()) {
-					json.name("description").value(description);
-				}
+				// Add label and description from part resource key (optional)
+				JsonResponseBuilder.writeLabelAndDescription(json, TLTypePartResourceProvider.labelKey(part));
 
 				json.endObject();
 			}

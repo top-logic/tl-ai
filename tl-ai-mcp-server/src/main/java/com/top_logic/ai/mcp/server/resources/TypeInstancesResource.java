@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.List;
 
+import com.top_logic.ai.mcp.server.util.JsonResponseBuilder;
 import com.top_logic.basic.thread.ThreadContextManager;
 import com.top_logic.common.json.gstream.JsonWriter;
 import com.top_logic.element.meta.MetaElementUtil;
@@ -54,7 +55,7 @@ public class TypeInstancesResource {
 	private static final String DESCRIPTION = "All instances of a specific TopLogic type";
 
 	/** MIME type for JSON content. */
-	private static final String MIME_TYPE = "application/json";
+	private static final String MIME_TYPE = JsonResponseBuilder.JSON_MIME_TYPE;
 
 	/**
 	 * Creates the MCP resource template specification for retrieving type instances.
@@ -185,9 +186,7 @@ public class TypeInstancesResource {
 	 */
 	private static String buildInstancesJson(String moduleName, String typeName, List<TLObject> instances) {
 		StringWriter buffer = new StringWriter();
-		try (JsonWriter json = new JsonWriter(buffer)) {
-			json.setIndent("  ");
-
+		try (JsonWriter json = JsonResponseBuilder.createWriter(buffer)) {
 			json.beginObject();
 
 			// Basic information
@@ -220,11 +219,11 @@ public class TypeInstancesResource {
 	 * @return A ReadResourceResult containing the error message
 	 */
 	private static McpSchema.ReadResourceResult createErrorResult(String uri, String message) {
-		String errorJson = "{\"error\": \"" + message.replace("\"", "\\\"") + "\"}";
+		String errorJson = JsonResponseBuilder.buildErrorJson(message);
 
 		McpSchema.TextResourceContents contents = new McpSchema.TextResourceContents(
 			uri,
-			"application/json",
+			MIME_TYPE,
 			errorJson
 		);
 

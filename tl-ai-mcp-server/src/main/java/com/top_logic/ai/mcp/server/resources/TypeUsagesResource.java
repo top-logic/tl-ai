@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.top_logic.ai.mcp.server.UriPattern;
+import com.top_logic.ai.mcp.server.util.JsonResponseBuilder;
 import com.top_logic.basic.thread.ThreadContextManager;
 import com.top_logic.common.json.gstream.JsonWriter;
 import com.top_logic.model.TLClass;
@@ -78,7 +79,7 @@ public class TypeUsagesResource {
 	private static final String DESCRIPTION = "Find usages of a TopLogic type (properties and subclasses)";
 
 	/** MIME type for JSON content. */
-	private static final String MIME_TYPE = "application/json";
+	private static final String MIME_TYPE = JsonResponseBuilder.JSON_MIME_TYPE;
 
 	/**
 	 * Creates the MCP resource template specification for finding type usages.
@@ -156,8 +157,7 @@ public class TypeUsagesResource {
 
 		// Build JSON object with usage information using JsonWriter
 		StringWriter buffer = new StringWriter();
-		try (JsonWriter json = new JsonWriter(buffer)) {
-			json.setIndent("  ");
+		try (JsonWriter json = JsonResponseBuilder.createWriter(buffer)) {
 			json.beginObject();
 
 			// Properties that use this type as value type

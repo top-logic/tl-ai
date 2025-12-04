@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.List;
 
+import com.top_logic.ai.mcp.server.util.JsonResponseBuilder;
 import com.top_logic.basic.IdentifierUtil;
 import com.top_logic.basic.TLID;
 import com.top_logic.basic.thread.ThreadContextManager;
@@ -66,7 +67,7 @@ public class InstanceResource {
 	private static final String DESCRIPTION = "Detailed information about a TopLogic instance by its TID";
 
 	/** MIME type for JSON content. */
-	private static final String MIME_TYPE = "application/json";
+	private static final String MIME_TYPE = JsonResponseBuilder.JSON_MIME_TYPE;
 
 	/**
 	 * Creates the MCP resource template specification for retrieving instance details.
@@ -189,9 +190,7 @@ public class InstanceResource {
 	 */
 	private static String buildInstanceJson(TLObject obj, String tid) {
 		StringWriter buffer = new StringWriter();
-		try (JsonWriter json = new JsonWriter(buffer)) {
-			json.setIndent("  ");
-
+		try (JsonWriter json = JsonResponseBuilder.createWriter(buffer)) {
 			json.beginObject();
 
 			// Basic object information
@@ -285,27 +284,14 @@ public class InstanceResource {
 		if (value == null) {
 			json.nullValue();
 		} else if (value instanceof TLObject) {
-			// For reference to another TLObject, just write its TID
-			TLObject refObj = (TLObject) value;
-			json.beginObject();
-			json.name("type").value("reference");
-			json.name("tid").value(refObj.tId().toString());
-			if (refObj.tType() != null) {
-				json.name("refType").value(refObj.tType().getName());
-			}
-			json.endObject();
+			// For reference to another TLObject, use the utility method
+			JsonResponseBuilder.writeTLObjectReference(json, (TLObject) value);
 		} else if (value instanceof Iterable) {
 			// For collections, write as JSON array
 			json.beginArray();
 			for (Object item : (Iterable<?>) value) {
 				if (item instanceof TLObject) {
-					json.beginObject();
-					json.name("type").value("reference");
-					json.name("tid").value(((TLObject) item).tId().toString());
-					if (((TLObject) item).tType() != null) {
-						json.name("refType").value(((TLObject) item).tType().getName());
-					}
-					json.endObject();
+					JsonResponseBuilder.writeTLObjectReference(json, (TLObject) item);
 				} else {
 					json.value(item != null ? item.toString() : null);
 				}
@@ -325,11 +311,11 @@ public class InstanceResource {
 	 * @return A ReadResourceResult containing the error message
 	 */
 	private static McpSchema.ReadResourceResult createErrorResult(String uri, String message) {
-		String errorJson = "{\"error\": \"" + message.replace("\"", "\\\"") + "\"}";
+		String errorJson = JsonResponseBuilder.buildErrorJson(message);
 
 		McpSchema.TextResourceContents contents = new McpSchema.TextResourceContents(
 			uri,
-			"application/json",
+			MIME_TYPE,
 			errorJson
 		);
 
