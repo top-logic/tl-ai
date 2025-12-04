@@ -1,0 +1,115 @@
+package com.top_logic.ai.mcp.server.tools;
+
+import java.util.Locale;
+import java.util.Map;
+
+import com.top_logic.base.config.i18n.Internationalized;
+import com.top_logic.basic.config.TypedConfiguration;
+import com.top_logic.basic.util.ResKey;
+import com.top_logic.basic.util.ResourceTransaction;
+import com.top_logic.basic.util.ResourcesModule;
+import com.top_logic.element.layout.meta.TLMetaModelUtil;
+import com.top_logic.model.TLNamedPart;
+
+/**
+ * 
+ */
+public class ToolI18NUtil {
+
+	private ToolI18NUtil() {
+		// utility class
+	}
+
+	/**
+	 * Simple value holder for localized label/description.
+	 */
+	public record LocalizedTexts(
+			String labelEn,
+			String labelDe,
+			String descEn,
+			String descDe) {
+
+		public boolean hasLabel() {
+			return labelEn != null || labelDe != null;
+		}
+
+		public boolean hasDescription() {
+			return descEn != null || descDe != null;
+		}
+
+		public boolean hasAny() {
+			return hasLabel() || hasDescription();
+		}
+	}
+
+	/**
+	 * Extracts label/description (en/de) from standard MCP arguments.
+	 */
+	public static LocalizedTexts extractFromArguments(Map<String, Object> arguments) {
+		if (arguments == null) {
+			return new LocalizedTexts(null, null, null, null);
+		}
+		String labelEn = extract(arguments, "label", "en");
+		String labelDe = extract(arguments, "label", "de");
+		String descEn = extract(arguments, "description", "en");
+		String descDe = extract(arguments, "description", "de");
+		return new LocalizedTexts(labelEn, labelDe, descEn, descDe);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static String extract(Map<String, Object> arguments, String objectKey, String languageKey) {
+		Object nestedObj = arguments.get(objectKey);
+		if (nestedObj instanceof Map) {
+			Map<String, Object> nestedMap = (Map<String, Object>) nestedObj;
+			Object value = nestedMap.get(languageKey);
+			if (value != null) {
+				String s = value.toString().trim();
+				return s.isEmpty() ? null : s;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Applies I18N to the given model element if anything is present.
+	 *
+	 * The {@code modelElement} can be a module, class, property, etc. – any type
+	 * that {@link TLMetaModelUtil#saveI18NForPart} accepts.
+	 */
+	public static void applyIfPresent(TLNamedPart part, LocalizedTexts texts) {
+		if (texts == null || !texts.hasAny()) {
+			return;
+		}
+
+		Internationalized i18N = TypedConfiguration.newConfigItem(Internationalized.class);
+
+		// Label
+		if (texts.hasLabel()) {
+			ResKey.Builder labelBuilder = ResKey.builder();
+			if (texts.labelEn() != null) {
+				labelBuilder.add(Locale.ENGLISH, texts.labelEn());
+			}
+			if (texts.labelDe() != null) {
+				labelBuilder.add(Locale.GERMAN, texts.labelDe());
+			}
+			i18N.setLabel(labelBuilder.build());
+		}
+
+		// Description
+		if (texts.hasDescription()) {
+			ResKey.Builder descBuilder = ResKey.builder();
+			if (texts.descEn() != null) {
+				descBuilder.add(Locale.ENGLISH, texts.descEn());
+			}
+			if (texts.descDe() != null) {
+				descBuilder.add(Locale.GERMAN, texts.descDe());
+			}
+			i18N.setDescription(descBuilder.build());
+		}
+
+		try (ResourceTransaction tx = ResourcesModule.getInstance().startResourceTransaction()) {
+			TLMetaModelUtil.saveI18NForPart(part, i18N, tx);
+			tx.commit();
+		}
+	}
+}

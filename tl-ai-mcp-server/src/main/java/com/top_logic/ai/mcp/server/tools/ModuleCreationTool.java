@@ -5,17 +5,11 @@ package com.top_logic.ai.mcp.server.tools;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.util.Locale;
 import java.util.Map;
 
-import com.top_logic.base.config.i18n.Internationalized;
-import com.top_logic.basic.config.TypedConfiguration;
 import com.top_logic.basic.thread.ThreadContextManager;
 import com.top_logic.basic.util.ResKey;
-import com.top_logic.basic.util.ResourceTransaction;
-import com.top_logic.basic.util.ResourcesModule;
 import com.top_logic.common.json.gstream.JsonWriter;
-import com.top_logic.element.layout.meta.TLMetaModelUtil;
 import com.top_logic.knowledge.service.PersistencyLayer;
 import com.top_logic.knowledge.service.Transaction;
 import com.top_logic.model.TLModel;
@@ -142,47 +136,30 @@ public class ModuleCreationTool {
 	 * @return The result indicating success or failure with module details.
 	 */
 	private static McpSchema.CallToolResult createModule(Map<String, Object> arguments) {
-		if (arguments == null) {
-			return createErrorResult("Module name is required");
+		final String moduleName;
+		try {
+			moduleName = ToolArgumentUtil.requireNonEmptyString(
+				arguments,
+				"moduleName",
+				"Module name");
+		} catch (ToolArgumentUtil.ToolInputException e) {
+			return createErrorResult(e.getMessage());
 		}
 
-		Object moduleNameObj = arguments.get("moduleName");
-		if (moduleNameObj == null) {
-			return createErrorResult("Module name is required");
-		}
-
-		String moduleName = moduleNameObj.toString().trim();
-		if (moduleName.isEmpty()) {
-			return createErrorResult("Module name cannot be empty");
-		}
-
-		// Get the application model first
 		TLModel model = ModelService.getApplicationModel();
+		TLModule module = model.getModule(moduleName);
+		boolean created = false;
 
-		// Check if module exists before deciding to use transaction
-		boolean existedBefore = (model.getModule(moduleName) != null);
+		if (module == null) {
+			// Extract I18N once, for reuse in other tools as well
+			ToolI18NUtil.LocalizedTexts i18n = ToolI18NUtil.extractFromArguments(arguments);
 
-		if (existedBefore) {
-			// Module already exists, return it without transaction
-			try {
-				TLModule module = model.getModule(moduleName);
-				String jsonResponse = buildSuccessJson(module, false);
-				return new McpSchema.CallToolResult(jsonResponse, false);
-			} catch (Exception ex) {
-				return createErrorResult("Failed to retrieve existing module: " + ex.getMessage());
-			}
-		} else {
-			// Extract optional labels and descriptions
-			String labelEng = extractLocalizedMessage(arguments, "label", "en");
-			String labelDe = extractLocalizedMessage(arguments, "label", "de");
-			String descEng = extractLocalizedMessage(arguments, "description", "en");
-			String descDe = extractLocalizedMessage(arguments, "description", "de");
+			try (Transaction tx =
+				PersistencyLayer.getKnowledgeBase().beginTransaction(ResKey.text("Create Module"))) {
 
-			TLModule module;
-			// Module doesn't exist, create it with transaction
-			try (Transaction tx = PersistencyLayer.getKnowledgeBase().beginTransaction(ResKey.text("Create Module"))) {
 				try {
-					module = TLModelUtil.makeModule(model, moduleName);
+					module = TLModelUtil.addModule(model, moduleName);
+					created = true;
 
 					tx.commit();
 				} catch (Exception ex) {
@@ -191,48 +168,17 @@ public class ModuleCreationTool {
 				}
 			}
 
-			// Only set I18N if labels or descriptions are provided
-			if (labelEng != null || labelDe != null || descEng != null || descDe != null) {
-				Internationalized i18N = TypedConfiguration.newConfigItem(Internationalized.class);
+			ToolI18NUtil.applyIfPresent(module, i18n);
+		}
 
-				// Build label ResKey with extracted values
-				ResKey.Builder labelBuilder = ResKey.builder();
-				if (labelEng != null) {
-					labelBuilder.add(Locale.ENGLISH, labelEng);
-				}
-				if (labelDe != null) {
-					labelBuilder.add(Locale.GERMAN, labelDe);
-				}
-				if (labelEng != null || labelDe != null) {
-					i18N.setLabel(labelBuilder.build());
-				}
-
-				// Build description ResKey with extracted values
-				ResKey.Builder descBuilder = ResKey.builder();
-				if (descEng != null) {
-					descBuilder.add(Locale.ENGLISH, descEng);
-				}
-				if (descDe != null) {
-					descBuilder.add(Locale.GERMAN, descDe);
-				}
-				if (descEng != null || descDe != null) {
-					i18N.setDescription(descBuilder.build());
-				}
-
-				try (ResourceTransaction tx = ResourcesModule.getInstance().startResourceTransaction()) {
-					TLMetaModelUtil.saveI18NForPart(module, i18N, tx);
-					tx.commit();
-				}
-			}
-
-			try {
-				String jsonResponse = buildSuccessJson(module, true);
-				return new McpSchema.CallToolResult(jsonResponse, false);
-			} catch (Exception ex) {
-				return createErrorResult("Failed to build success response: " + ex.getMessage());
-			}
+		try {
+			String jsonResponse = buildSuccessJson(module, created);
+			return new McpSchema.CallToolResult(jsonResponse, false);
+		} catch (Exception ex) {
+			return createErrorResult("Failed to build success response: " + ex.getMessage());
 		}
 	}
+
 
 	/**
 	 * Builds a JSON response for successful module creation.
@@ -286,30 +232,6 @@ public class ModuleCreationTool {
 			json.endObject();
 		}
 		return buffer.toString();
-	}
-
-	/**
-	 * Extracts a language-specific value from a nested object.
-	 *
-	 * @param arguments
-	 *        The tool call arguments.
-	 * @param objectKey
-	 *        The key for the nested object (e.g., "label" or "description").
-	 * @param languageKey
-	 *        The language key within the object (e.g., "en" or "de").
-	 * @return The extracted value or null if not provided.
-	 */
-	@SuppressWarnings("unchecked")
-	private static String extractLocalizedMessage(Map<String, Object> arguments, String objectKey, String languageKey) {
-		Object nestedObj = arguments.get(objectKey);
-		if (nestedObj instanceof Map) {
-			Map<String, Object> nestedMap = (Map<String, Object>) nestedObj;
-			Object value = nestedMap.get(languageKey);
-			if (value != null) {
-				return value.toString().trim();
-			}
-		}
-		return null;
 	}
 
 	/**
