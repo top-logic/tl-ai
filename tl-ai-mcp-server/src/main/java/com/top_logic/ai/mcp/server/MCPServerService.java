@@ -21,6 +21,7 @@ import com.top_logic.ai.mcp.server.resources.ModuleTypesResource;
 import com.top_logic.ai.mcp.server.resources.TypeInstancesResource;
 import com.top_logic.ai.mcp.server.resources.TypePartsResource;
 import com.top_logic.ai.mcp.server.resources.TypeUsagesResource;
+import com.top_logic.ai.mcp.server.tools.ClassCreationTool;
 import com.top_logic.ai.mcp.server.tools.ModuleCreationTool;
 import com.top_logic.basic.config.InstantiationContext;
 import com.top_logic.basic.config.PolymorphicConfiguration;
@@ -286,6 +287,9 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 
 		// Register tool for creating modules
 		builder.tools(ModuleCreationTool.createSpecification());
+
+		// Register tool for creating classes
+		builder.tools(ClassCreationTool.createSpecification());
 
 		// Register configured dynamic resources
 		InstantiationContext context = new com.top_logic.basic.config.DefaultInstantiationContext(getClass());
