@@ -47,7 +47,8 @@ public class PropertyCreationTool {
 
 	/** Tool description. */
 	private static final String DESCRIPTION =
-		"Create a new property on a TopLogic class with primitive types (STRING, INT, BOOLEAN, etc.)";
+		"Create a new property on a TopLogic class with primitive types (STRING, INT, BOOLEAN, FLOAT, DATE, TRISTATE, BINARY, CUSTOM), "
+			+ "or return an existing one by name.";
 
 	/** JSON Schema for the tool input. */
 	private static final String INPUT_SCHEMA_JSON = """
@@ -225,12 +226,12 @@ public class PropertyCreationTool {
 			return createErrorResult(e.getMessage());
 		}
 
-		// Extract optional cardinality settings
+		// Extract optional flags
 		boolean mandatory = ToolArgumentUtil.getBooleanArgument(arguments, "mandatory", false);
 		boolean multiple = ToolArgumentUtil.getBooleanArgument(arguments, "multiple", false);
 		boolean ordered = ToolArgumentUtil.getBooleanArgument(arguments, "ordered", false);
 		boolean bag = ToolArgumentUtil.getBooleanArgument(arguments, "bag", false);
-		boolean abstractProperty = ToolArgumentUtil.getBooleanArgument(arguments, "abstract", false);
+		boolean isAbstract = ToolArgumentUtil.getBooleanArgument(arguments, "abstract", false);
 
 		// Extract I18N once, for potential use if creating new property
 		ToolI18NUtil.LocalizedTexts i18n = ToolI18NUtil.extractFromArguments(arguments);
@@ -255,45 +256,54 @@ public class PropertyCreationTool {
 
 		// Check if property already exists
 		TLStructuredTypePart existingPart = tlClass.getPart(propertyName);
-		if (existingPart != null) {
-			return createErrorResult(
-				"Property '" + propertyName + "' already exists on class '" + className + "'");
-		}
-
-		// Resolve primitive type
-		TLType propertyType;
-		try {
-			propertyType = resolvePrimitiveType(model, propertyTypeKind);
-		} catch (ToolArgumentUtil.ToolInputException e) {
-			return createErrorResult(e.getMessage());
-		}
-
-		// Create property within transaction
 		TLClassProperty property;
-		try (Transaction tx =
-			PersistencyLayer.getKnowledgeBase().beginTransaction(ResKey.text("Create Property"))) {
+		boolean created = false;
 
-			// Create the property
-			property = TLModelUtil.addProperty(tlClass, propertyName, propertyType);
+		if (existingPart != null) {
+			// Already exists: ensure it is actually a TLClassProperty
+			if (!(existingPart instanceof TLClassProperty)) {
+				return createErrorResult(
+					"Structured type part '" + propertyName + "' already exists on class '" + className
+						+ "' but is not a property");
+			}
+			property = (TLClassProperty) existingPart;
+			// Variant A: return existing property without modifying it
+		} else {
+			// Resolve primitive type
+			final TLType propertyType;
+			try {
+				propertyType = resolvePrimitiveType(model, propertyTypeKind);
+			} catch (ToolArgumentUtil.ToolInputException e) {
+				return createErrorResult(e.getMessage());
+			}
 
-			// Configure cardinality
-			property.setMandatory(mandatory);
-			property.setMultiple(multiple);
-			property.setOrdered(ordered);
-			property.setBag(bag);
-			property.setAbstract(abstractProperty);
+			// Create property within transaction
+			try (Transaction tx =
+				PersistencyLayer.getKnowledgeBase().beginTransaction(ResKey.text("Create Property"))) {
 
-			tx.commit();
+				// Create the property
+				property = TLModelUtil.addProperty(tlClass, propertyName, propertyType);
+				created = true;
 
-		} catch (Exception ex) {
-			return createErrorResult("Failed to create property: " + ex.getMessage());
+				// Configure cardinality and flags
+				property.setMandatory(mandatory);
+				property.setMultiple(multiple);
+				property.setOrdered(ordered);
+				property.setBag(bag);
+				property.setAbstract(isAbstract);
+
+				tx.commit();
+
+			} catch (Exception ex) {
+				return createErrorResult("Failed to create property: " + ex.getMessage());
+			}
+
+			// Apply i18n only after successful creation (not for existing properties)
+			ToolI18NUtil.applyIfPresent(property, i18n);
 		}
 
-		// Apply i18n only after successful creation
-		ToolI18NUtil.applyIfPresent(property, i18n);
-
 		try {
-			String jsonResponse = buildSuccessJson(property, true);
+			String jsonResponse = buildSuccessJson(property, created);
 			return new McpSchema.CallToolResult(jsonResponse, false);
 		} catch (Exception ex) {
 			return createErrorResult("Failed to build success response: " + ex.getMessage());
@@ -346,12 +356,9 @@ public class PropertyCreationTool {
 	 * Builds a JSON response for successful property creation.
 	 *
 	 * @param property
-	 *        The created property.
+	 *        The created or retrieved property.
 	 * @param newlyCreated
-	 *        Whether the property was newly created (always true for this tool).
-	 * @return JSON string containing the success response.
-	 * @throws IOException
-	 *         If JSON writing fails.
+	 *        Whether the property was newly created or already existed.
 	 */
 	private static String buildSuccessJson(TLClassProperty property, boolean newlyCreated) throws IOException {
 		StringWriter buffer = new StringWriter();
@@ -369,6 +376,7 @@ public class PropertyCreationTool {
 			json.name("multiple").value(property.isMultiple());
 			json.name("ordered").value(property.isOrdered());
 			json.name("bag").value(property.isBag());
+			json.name("abstract").value(property.isAbstract());
 
 			// Add label and description from property resource key (optional)
 			JsonResponseBuilder.writeLabelAndDescription(json,
@@ -377,8 +385,13 @@ public class PropertyCreationTool {
 			json.endObject();
 			json.name("created").value(newlyCreated);
 
-			json.name("message").value("Property '" + property.getName() + "' created successfully in class '"
-				+ property.getOwner().getName() + "'");
+			if (newlyCreated) {
+				json.name("message").value("Property '" + property.getName()
+					+ "' created successfully in class '" + property.getOwner().getName() + "'");
+			} else {
+				json.name("message").value("Property '" + property.getName()
+					+ "' already existed in class '" + property.getOwner().getName() + "'");
+			}
 
 			json.endObject();
 		}
