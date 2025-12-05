@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import com.top_logic.ai.mcp.server.util.JsonResponseBuilder;
 import com.top_logic.basic.thread.ThreadContextManager;
@@ -109,6 +110,9 @@ public class ClassCreationTool {
 			  "additionalProperties": false
 			}
 			""";
+
+	private static final Pattern CLASS_NAME_PATTERN =
+		Pattern.compile("^[A-Z][a-zA-Z0-9_]*$");
 
 	/**
 	 * Creates the MCP tool specification for class creation.
@@ -267,8 +271,10 @@ public class ClassCreationTool {
 	 * @throws ToolArgumentUtil.ToolInputException
 	 *         If the class name doesn't meet the requirements.
 	 */
-	private static void validateClassName(String className) throws ToolArgumentUtil.ToolInputException {
-		if (!className.matches("^[A-Z][a-zA-Z0-9_]*$")) {
+	private static void validateClassName(String className)
+			throws ToolArgumentUtil.ToolInputException {
+
+		if (!CLASS_NAME_PATTERN.matcher(className).matches()) {
 			throw new ToolArgumentUtil.ToolInputException(
 				"Class name must start with an uppercase letter and contain only letters, numbers, and underscores");
 		}
