@@ -21,10 +21,12 @@ import com.top_logic.ai.mcp.server.resources.ModuleTypesResource;
 import com.top_logic.ai.mcp.server.resources.TypeInstancesResource;
 import com.top_logic.ai.mcp.server.resources.TypePartsResource;
 import com.top_logic.ai.mcp.server.resources.TypeUsagesResource;
+import com.top_logic.ai.mcp.server.tools.BackwardReferenceCreationTool;
 import com.top_logic.ai.mcp.server.tools.ClassCreationTool;
 import com.top_logic.ai.mcp.server.tools.EnumerationCreationTool;
 import com.top_logic.ai.mcp.server.tools.ModuleCreationTool;
 import com.top_logic.ai.mcp.server.tools.PropertyCreationTool;
+import com.top_logic.ai.mcp.server.tools.ReferenceCreationTool;
 import com.top_logic.basic.config.InstantiationContext;
 import com.top_logic.basic.config.PolymorphicConfiguration;
 import com.top_logic.basic.config.annotation.Name;
@@ -295,6 +297,12 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 
 		// Register tool for creating properties
 		builder.tools(PropertyCreationTool.createSpecification());
+
+		// Register tool for creating references
+		builder.tools(ReferenceCreationTool.createSpecification());
+
+		// Register tool for creating backward references
+		builder.tools(BackwardReferenceCreationTool.createSpecification());
 
 		// Register tool for creating enumerations
 		builder.tools(EnumerationCreationTool.createSpecification());
