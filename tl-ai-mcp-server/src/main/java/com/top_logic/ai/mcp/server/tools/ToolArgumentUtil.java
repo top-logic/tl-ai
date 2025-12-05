@@ -1,5 +1,7 @@
 package com.top_logic.ai.mcp.server.tools;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public final class ToolArgumentUtil {
@@ -49,5 +51,23 @@ public final class ToolArgumentUtil {
 	public static boolean getBooleanArgument(Map<String, Object> arguments, String key, boolean defaultValue) {
 		Object value = arguments.get(key);
 		return value instanceof Boolean ? (Boolean) value : defaultValue;
+	}
+
+	public static List<String> getOptionalStringList(Map<String, Object> arguments, String key) {
+		Object value = arguments.get(key);
+		if (value == null) {
+			return null; // "nicht gesetzt"
+		}
+		if (!(value instanceof Iterable<?>)) {
+			throw new IllegalArgumentException("Expected an array for '" + key + "'.");
+		}
+		List<String> result = new ArrayList<>();
+		for (Object item : (Iterable<?>) value) {
+			if (!(item instanceof String)) {
+				throw new IllegalArgumentException("Expected all entries of '" + key + "' to be strings.");
+			}
+			result.add((String) item);
+		}
+		return result;
 	}
 }

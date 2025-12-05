@@ -5,6 +5,9 @@ package com.top_logic.ai.mcp.server.tools;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import com.top_logic.ai.mcp.server.util.JsonResponseBuilder;
@@ -55,6 +58,21 @@ public class ClassCreationTool {
 			    "className": {
 			      "type": "string",
 			      "description": "Name of the class to create. Must start with an uppercase letter and contain only letters, numbers, and underscores."
+			    },
+			    "abstract": {
+			      "type": "boolean",
+			      "description": "Whether the class is abstract / cannot be instantiated directly (default: false)"
+			    },
+			    "final": {
+			      "type": "boolean",
+			      "description": "Whether the class is final / cannot be specialized (default: false)"
+			    },
+			    "generalizations": {
+			      "type": "array",
+			      "description": "Names of the classes this class directly extends.",
+			      "items": {
+			        "type": "string"
+			      }
 			    },
 			    "label": {
 			      "type": "object",
@@ -164,6 +182,19 @@ public class ClassCreationTool {
 		} catch (ToolArgumentUtil.ToolInputException e) {
 			return createErrorResult(e.getMessage());
 		}
+		
+		// Klassennamen aus Argumenten lesen
+		List<String> generalizationNames;
+		try {
+			generalizationNames = ToolArgumentUtil.getOptionalStringList(arguments, "generalizations");
+		} catch (IllegalArgumentException e) {
+			return createErrorResult(e.getMessage());
+		}
+
+		// Extract optional cardinality settings
+		boolean isAbstract = ToolArgumentUtil.getBooleanArgument(arguments, "abstract", false);
+		boolean isFinal = ToolArgumentUtil.getBooleanArgument(arguments, "final", false);
+
 
 		// Extract I18N once, for potential use if creating new class
 		ToolI18NUtil.LocalizedTexts i18n = ToolI18NUtil.extractFromArguments(arguments);
@@ -173,6 +204,14 @@ public class ClassCreationTool {
 		TLModule module = model.getModule(moduleName);
 		if (module == null) {
 			return createErrorResult("Module '" + moduleName + "' does not exist");
+		}
+
+		// TLClass-Generalizations-Objekte auflösen und Existenzen prüfen
+		final List<TLClass> generalizations;
+		try {
+			generalizations = resolveGeneralizations(generalizationNames, module);
+		} catch (ToolArgumentUtil.ToolInputException e) {
+			return createErrorResult(e.getMessage());
 		}
 
 		// Check if class already exists
@@ -193,6 +232,9 @@ public class ClassCreationTool {
 				PersistencyLayer.getKnowledgeBase().beginTransaction(ResKey.text("Create Class"))) {
 
 				tlClass = TLModelUtil.addClass(module, className);
+				tlClass.setAbstract(isAbstract);
+				tlClass.setFinal(isFinal);
+				tlClass.getGeneralizations().addAll(generalizations);
 				created = true;
 
 				tx.commit();
@@ -230,6 +272,32 @@ public class ClassCreationTool {
 			throw new ToolArgumentUtil.ToolInputException(
 				"Class name must start with an uppercase letter and contain only letters, numbers, and underscores");
 		}
+	}
+
+	private static List<TLClass> resolveGeneralizations(
+			List<String> generalizationNames,
+			TLModule module) throws ToolArgumentUtil.ToolInputException {
+
+		if (generalizationNames == null) {
+			return Collections.emptyList();
+		}
+
+		List<TLClass> result = new ArrayList<>();
+		for (String generalizationName : generalizationNames) {
+			TLType type = module.getType(generalizationName);
+			if (type == null) {
+				throw new ToolArgumentUtil.ToolInputException(
+					"Generalization class '" + generalizationName + "' does not exist in module '"
+						+ module.getName() + "'.");
+			}
+			if (!(type instanceof TLClass)) {
+				throw new ToolArgumentUtil.ToolInputException(
+					"Type '" + generalizationName + "' exists in module '" + module.getName()
+						+ "' but is not a class.");
+			}
+			result.add((TLClass) type);
+		}
+		return result;
 	}
 
 	/**
