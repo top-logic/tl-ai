@@ -70,4 +70,35 @@ public final class ToolArgumentUtil {
 		}
 		return result;
 	}
+
+	/**
+	 * Extracts an optional list of objects (maps) from the arguments.
+	 *
+	 * @param arguments
+	 *        The arguments map.
+	 * @param key
+	 *        The argument key.
+	 * @return List of maps, or empty list if not present.
+	 * @throws IllegalArgumentException
+	 *         If the value is not an array or contains non-maps.
+	 */
+	public static List<Map<String, Object>> getOptionalObjectList(Map<String, Object> arguments, String key) {
+		Object value = arguments.get(key);
+		if (value == null) {
+			return java.util.Collections.emptyList();
+		}
+		if (!(value instanceof Iterable<?>)) {
+			throw new IllegalArgumentException("Expected an array for '" + key + "'.");
+		}
+		List<Map<String, Object>> result = new ArrayList<>();
+		for (Object item : (Iterable<?>) value) {
+			if (!(item instanceof Map)) {
+				throw new IllegalArgumentException("Expected all entries of '" + key + "' to be objects.");
+			}
+			@SuppressWarnings("unchecked")
+			Map<String, Object> map = (Map<String, Object>) item;
+			result.add(map);
+		}
+		return result;
+	}
 }
