@@ -34,4 +34,20 @@ public final class ToolArgumentUtil {
 			super(message);
 		}
 	}
+
+	/**
+	 * Extracts a boolean argument from the arguments map.
+	 *
+	 * @param arguments
+	 *        The arguments map.
+	 * @param key
+	 *        The argument key.
+	 * @param defaultValue
+	 *        The default value if the argument is not present.
+	 * @return The boolean value.
+	 */
+	public static boolean getBooleanArgument(Map<String, Object> arguments, String key, boolean defaultValue) {
+		Object value = arguments.get(key);
+		return value instanceof Boolean ? (Boolean) value : defaultValue;
+	}
 }
