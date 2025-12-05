@@ -240,28 +240,26 @@ public class EnumerationCreationTool {
 	 * @return The result indicating success or failure with enumeration details.
 	 */
 	private static McpSchema.CallToolResult createEnumeration(Map<String, Object> arguments) {
-		// Extract and validate module name
+		// Extract and validate arguments
 		final String moduleName;
+		final String enumName;
+
 		try {
 			moduleName = ToolArgumentUtil.requireNonEmptyString(
 				arguments,
 				"moduleName",
 				"Module name");
-		} catch (ToolArgumentUtil.ToolInputException e) {
-			return createErrorResult(e.getMessage());
-		}
 
-		// Extract and validate enumeration name
-		final String enumName;
-		try {
 			enumName = ToolArgumentUtil.requireNonEmptyString(
 				arguments,
 				"enumName",
 				"Enumeration name");
 			validateEnumName(enumName);
+
 		} catch (ToolArgumentUtil.ToolInputException e) {
 			return createErrorResult(e.getMessage());
 		}
+
 
 		// Extract I18N for enumeration
 		ToolI18NUtil.LocalizedTexts enumerationI18n = ToolI18NUtil.extractFromArguments(arguments);

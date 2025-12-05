@@ -181,50 +181,38 @@ public class PropertyCreationTool {
 	 * @return The result indicating success or failure with property details.
 	 */
 	private static McpSchema.CallToolResult createProperty(Map<String, Object> arguments) {
-		// Extract and validate module name
+		// Extract and validate required arguments
 		final String moduleName;
+		final String className;
+		final String propertyName;
+		final String propertyTypeKind;
+
 		try {
 			moduleName = ToolArgumentUtil.requireNonEmptyString(
 				arguments,
 				"moduleName",
 				"Module name");
-		} catch (ToolArgumentUtil.ToolInputException e) {
-			return createErrorResult(e.getMessage());
-		}
 
-		// Extract and validate class name
-		final String className;
-		try {
 			className = ToolArgumentUtil.requireNonEmptyString(
 				arguments,
 				"className",
 				"Class name");
-		} catch (ToolArgumentUtil.ToolInputException e) {
-			return createErrorResult(e.getMessage());
-		}
 
-		// Extract and validate property name
-		final String propertyName;
-		try {
 			propertyName = ToolArgumentUtil.requireNonEmptyString(
 				arguments,
 				"propertyName",
 				"Property name");
 			validatePropertyName(propertyName);
-		} catch (ToolArgumentUtil.ToolInputException e) {
-			return createErrorResult(e.getMessage());
-		}
 
-		// Extract and validate property type
-		final String propertyTypeKind;
-		try {
 			propertyTypeKind = ToolArgumentUtil.requireNonEmptyString(
 				arguments,
 				"propertyType",
 				"Property type");
+
 		} catch (ToolArgumentUtil.ToolInputException e) {
 			return createErrorResult(e.getMessage());
 		}
+
 
 		// Extract optional flags
 		boolean mandatory = ToolArgumentUtil.getBooleanArgument(arguments, "mandatory", false);

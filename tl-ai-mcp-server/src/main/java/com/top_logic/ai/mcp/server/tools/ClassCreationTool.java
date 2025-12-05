@@ -164,28 +164,26 @@ public class ClassCreationTool {
 	 * @return The result indicating success or failure with class details.
 	 */
 	private static McpSchema.CallToolResult createClass(Map<String, Object> arguments) {
-		// Extract and validate module name
+		// Extract and validate module and class name
 		final String moduleName;
+		final String className;
+
 		try {
 			moduleName = ToolArgumentUtil.requireNonEmptyString(
 				arguments,
 				"moduleName",
 				"Module name");
-		} catch (ToolArgumentUtil.ToolInputException e) {
-			return createErrorResult(e.getMessage());
-		}
 
-		// Extract and validate class name
-		final String className;
-		try {
 			className = ToolArgumentUtil.requireNonEmptyString(
 				arguments,
 				"className",
 				"Class name");
 			validateClassName(className);
+
 		} catch (ToolArgumentUtil.ToolInputException e) {
 			return createErrorResult(e.getMessage());
 		}
+
 		
 		// Klassennamen aus Argumenten lesen
 		List<String> generalizationNames;

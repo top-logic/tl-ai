@@ -38,6 +38,26 @@ public final class ToolArgumentUtil {
 	}
 
 	/**
+	 * Extracts an optional string argument from the arguments map.
+	 *
+	 * @param arguments
+	 *        The arguments map.
+	 * @param key
+	 *        The argument key.
+	 * @param defaultValue
+	 *        The default value if the argument is not present.
+	 * @return The string value, or the default if not present.
+	 */
+	public static String getOptionalString(Map<String, Object> arguments, String key, String defaultValue) {
+		Object value = arguments.get(key);
+		if (value == null) {
+			return defaultValue;
+		}
+		String text = value.toString().trim();
+		return text.isEmpty() ? defaultValue : text;
+	}
+
+	/**
 	 * Extracts a boolean argument from the arguments map.
 	 *
 	 * @param arguments
