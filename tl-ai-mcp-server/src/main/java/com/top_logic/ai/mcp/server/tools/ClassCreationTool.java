@@ -192,15 +192,13 @@ public class ClassCreationTool {
 			try (Transaction tx =
 				PersistencyLayer.getKnowledgeBase().beginTransaction(ResKey.text("Create Class"))) {
 
-				try {
-					tlClass = TLModelUtil.addClass(module, className);
-					created = true;
+				tlClass = TLModelUtil.addClass(module, className);
+				created = true;
 
-					tx.commit();
-				} catch (Exception ex) {
-					tx.rollback();
-					return createErrorResult("Failed to create class: " + ex.getMessage());
-				}
+				tx.commit();
+
+			} catch (Exception ex) {
+				return createErrorResult("Failed to create class: " + ex.getMessage());
 			}
 
 			// Apply i18n only for newly created classes

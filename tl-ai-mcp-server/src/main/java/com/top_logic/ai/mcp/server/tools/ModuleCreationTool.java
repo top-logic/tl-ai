@@ -157,15 +157,13 @@ public class ModuleCreationTool {
 			try (Transaction tx =
 				PersistencyLayer.getKnowledgeBase().beginTransaction(ResKey.text("Create Module"))) {
 
-				try {
-					module = TLModelUtil.addModule(model, moduleName);
-					created = true;
+				module = TLModelUtil.addModule(model, moduleName);
+				created = true;
 
-					tx.commit();
-				} catch (Exception ex) {
-					tx.rollback();
-					return createErrorResult("Failed to create module: " + ex.getMessage());
-				}
+				tx.commit();
+
+			} catch (Exception ex) {
+				return createErrorResult("Failed to create module: " + ex.getMessage());
 			}
 
 			ToolI18NUtil.applyIfPresent(module, i18n);
