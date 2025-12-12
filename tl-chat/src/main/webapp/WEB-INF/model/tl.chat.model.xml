@@ -4,8 +4,8 @@
     <module name="tl.chat">
         <annotations>
             <package-binding
-                implementation-package="com.top_logic.chat.model.impl"
-                interface-package="com.top_logic.chat.model"
+                implementation-package="com.top_logic.chat.model.implementation"
+                interface-package="com.top_logic.chat.model.interfaces"
             />
             <singletons>
                 <singleton name="ChatRoot" type="ChatRoot"/>

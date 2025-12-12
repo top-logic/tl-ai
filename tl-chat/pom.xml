@@ -15,6 +15,12 @@
 	</properties>
 
 	<dependencies>
+		<!-- Runtime -->
+		<dependency>
+			<groupId>com.top-logic</groupId>
+			<artifactId>tl-element</artifactId>
+		</dependency>
+
 		<!-- Tests -->
 		<dependency>
 			<groupId>com.top-logic</groupId>
@@ -32,6 +38,23 @@
 
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>com.top-logic</groupId>
+				<artifactId>tl-maven-plugin</artifactId>
+				<version>${tl.version}</version>
+				<executions>
+					<execution>
+						<id>generate-binding</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>generate-java</goal>
+						</goals>
+						<configuration>
+							<modules>tl.chat</modules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 </project>
