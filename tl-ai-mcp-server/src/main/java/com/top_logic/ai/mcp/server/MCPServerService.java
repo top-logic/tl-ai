@@ -29,6 +29,7 @@ import com.top_logic.ai.mcp.server.tools.EnumerationUpdateTool;
 import com.top_logic.ai.mcp.server.tools.ModuleCreationTool;
 import com.top_logic.ai.mcp.server.tools.ModuleUpdateTool;
 import com.top_logic.ai.mcp.server.tools.PropertyCreationTool;
+import com.top_logic.ai.mcp.server.tools.PropertyUpdateTool;
 import com.top_logic.ai.mcp.server.tools.ReferenceCreationTool;
 import com.top_logic.ai.mcp.server.tools.TLScriptExecutionTool;
 import com.top_logic.ai.mcp.server.tools.TLScriptValidationTool;
@@ -308,6 +309,9 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 
 		// Register tool for creating properties
 		builder.tools(PropertyCreationTool.createSpecification());
+
+		// Register tool for updating properties
+		builder.tools(PropertyUpdateTool.createSpecification());
 
 		// Register tool for creating references
 		builder.tools(ReferenceCreationTool.createSpecification());
