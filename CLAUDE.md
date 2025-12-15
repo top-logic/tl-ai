@@ -171,6 +171,10 @@ Build output includes:
 
 ## Coding Conventions
 
+### JavaDoc
+
+**DO NOT** add `@author` tags to class JavaDoc. Author information should be tracked through version control (git), not in source code comments.
+
 ### Configuration Property Constants
 
 When defining configuration property name constants in service configuration interfaces, always include a `@see` JavaDoc reference to the corresponding getter method.
