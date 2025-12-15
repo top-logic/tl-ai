@@ -68,8 +68,7 @@ class OpenAIClientFactory extends BasePoolableObjectFactory<OpenAIClient> {
 
 	@Override
 	public void destroyObject(OpenAIClient client) throws Exception {
-		// The OpenAI Java client doesn't require explicit cleanup
-		// Resources will be garbage collected
+		client.close();
 	}
 
 	@Override
