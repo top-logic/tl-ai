@@ -5,8 +5,11 @@ package com.top_logic.ai.openai;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
+
 import com.top_logic.basic.config.InstantiationContext;
+import com.top_logic.basic.config.annotation.Encrypted;
 import com.top_logic.basic.config.annotation.Name;
+import com.top_logic.basic.config.annotation.Nullable;
 import com.top_logic.basic.config.annotation.defaults.StringDefault;
 import com.top_logic.basic.config.order.DisplayInherited;
 import com.top_logic.basic.config.order.DisplayInherited.DisplayStrategy;
@@ -37,6 +40,8 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 	@DisplayOrder({
 		Config.API_KEY,
 		Config.BASE_URL,
+		Config.ORGANIZATION,
+		Config.PROJECT,
 	})
 	@DisplayInherited(DisplayStrategy.PREPEND)
 	public interface Config<I extends OpenAIService> extends ConfiguredManagedClass.Config<I> {
@@ -56,6 +61,20 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 		String BASE_URL = "base-url";
 
 		/**
+		 * Configuration property name for organization.
+		 *
+		 * @see #getOrganization()
+		 */
+		String ORGANIZATION = "organization";
+
+		/**
+		 * Configuration property name for project.
+		 *
+		 * @see #getProject()
+		 */
+		String PROJECT = "project";
+
+		/**
 		 * The OpenAI API key for authentication.
 		 *
 		 * <p>
@@ -64,6 +83,7 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 		 * </p>
 		 */
 		@Name(API_KEY)
+		@Encrypted
 		String getApiKey();
 
 		/**
@@ -80,6 +100,31 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 		@Name(BASE_URL)
 		@StringDefault("https://api.openai.com/v1")
 		String getBaseUrl();
+
+		/**
+		 * The OpenAI organization ID.
+		 *
+		 * <p>
+		 * Optional. For users who belong to multiple organizations, you can specify which
+		 * organization is used for an API request. Usage from these API requests will count
+		 * against the specified organization's quota.
+		 * </p>
+		 */
+		@Name(ORGANIZATION)
+		@Nullable
+		String getOrganization();
+
+		/**
+		 * The OpenAI project ID.
+		 *
+		 * <p>
+		 * Optional. Allows you to specify which project is used for an API request. Usage
+		 * from these API requests will count against the specified project's quota.
+		 * </p>
+		 */
+		@Name(PROJECT)
+		@Nullable
+		String getProject();
 	}
 
 	private static volatile OpenAIService _instance;
@@ -125,11 +170,25 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 					"' property in the service configuration.");
 			}
 
-			// Create OpenAI client with configured API key and base URL
-			_client = OpenAIOkHttpClient.builder()
+			// Create OpenAI client builder with configured API key and base URL
+			OpenAIOkHttpClient.Builder builder = OpenAIOkHttpClient.builder()
 				.apiKey(apiKey)
-				.baseUrl(config.getBaseUrl())
-				.build();
+				.baseUrl(config.getBaseUrl());
+
+			// Add optional organization if configured
+			String organization = config.getOrganization();
+			if (organization != null) {
+				builder.organization(organization);
+			}
+
+			// Add optional project if configured
+			String project = config.getProject();
+			if (project != null) {
+				builder.project(project);
+			}
+
+			// Build the client
+			_client = builder.build();
 
 		} catch (RuntimeException ex) {
 			throw ex;
