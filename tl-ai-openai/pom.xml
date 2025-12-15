@@ -4,11 +4,10 @@
 
 	<parent>
 		<groupId>com.top-logic</groupId>
-		<artifactId>tl-parent-app</artifactId>
+		<artifactId>tl-parent-core</artifactId>
 		<version>7.10.0-SNAPSHOT</version>	
 	</parent>
 	
-	<groupId>com.top-logic</groupId>
 	<artifactId>tl-ai-openai</artifactId>
 	<version>1.0-SNAPSHOT</version>
 	<name>tl-archetype-app</name>
@@ -21,6 +20,13 @@
 		<dependency>
 			<groupId>com.top-logic</groupId>
 			<artifactId>tl-contact</artifactId>
+		</dependency>
+
+		<!-- OpenAI SDK -->
+		<dependency>
+			<groupId>com.openai</groupId>
+			<artifactId>openai-java</artifactId>
+			<version>4.11.0</version>
 		</dependency>
 
 		<!-- Tests -->

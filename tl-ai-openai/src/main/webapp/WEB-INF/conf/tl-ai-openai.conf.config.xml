@@ -17,6 +17,22 @@
 				</modules>
 			</instance>
 		</config>
+
+		<config service-class="com.top_logic.basic.module.ModuleSystem">
+			<instance>
+				<modules>
+					<!-- OpenAI Service for OpenAI API integration -->
+					<module key="com.top_logic.ai.openai.OpenAIService$Module" value="true"/>
+				</modules>
+			</instance>
+		</config>
+
+		<config service-class="com.top_logic.ai.openai.OpenAIService">
+			<instance class="com.top_logic.ai.openai.OpenAIService"
+				api-key="YOUR_OPENAI_API_KEY_HERE"
+				base-url="https://api.openai.com/v1"
+			/>
+		</config>
 	</services>
 
 	<configs>
