@@ -29,6 +29,13 @@
 			<version>4.11.0</version>
 		</dependency>
 
+
+	<!-- Apache Commons Pool for client pooling -->
+	<dependency>
+		<groupId>commons-pool</groupId>
+		<artifactId>commons-pool</artifactId>
+		<version>1.6</version>
+	</dependency>
 		<!-- Tests -->
 		<dependency>
 			<groupId>com.top-logic</groupId>

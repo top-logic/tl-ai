@@ -3,34 +3,51 @@
  */
 package com.top_logic.ai.openai;
 
-import com.openai.client.OpenAIClient;
-import com.openai.client.okhttp.OpenAIOkHttpClient;
+import org.apache.commons.pool.ObjectPool;
+import org.apache.commons.pool.impl.GenericObjectPool;
 
+import com.openai.client.OpenAIClient;
+
+import com.top_logic.basic.CalledByReflection;
+import com.top_logic.basic.InteractionContext;
+import com.top_logic.basic.col.TypedAnnotatable;
+import com.top_logic.basic.col.TypedAnnotatable.Property;
 import com.top_logic.basic.config.InstantiationContext;
 import com.top_logic.basic.config.annotation.Encrypted;
 import com.top_logic.basic.config.annotation.Name;
 import com.top_logic.basic.config.annotation.Nullable;
+import com.top_logic.basic.config.annotation.defaults.IntDefault;
 import com.top_logic.basic.config.annotation.defaults.StringDefault;
 import com.top_logic.basic.config.order.DisplayInherited;
 import com.top_logic.basic.config.order.DisplayInherited.DisplayStrategy;
 import com.top_logic.basic.config.order.DisplayOrder;
 import com.top_logic.basic.module.ConfiguredManagedClass;
 import com.top_logic.basic.module.TypedRuntimeModule;
+import com.top_logic.basic.thread.ThreadContext;
+import com.top_logic.basic.thread.ThreadContextManager;
+import com.top_logic.basic.thread.UnboundListener;
 
 /**
- * TopLogic service that provides access to OpenAI API functionality.
+ * TopLogic service that provides access to OpenAI API functionality with thread-safe client pooling.
  *
  * <p>
- * This service initializes an OpenAI client during application startup and ensures proper cleanup
- * during shutdown. The client can be configured through the TopLogic application configuration.
+ * This service manages a pool of {@link OpenAIClient} instances to support concurrent access from
+ * multiple sessions. Clients are automatically bound to the current {@link ThreadContext} and
+ * returned to the pool when the context is destroyed.
  * </p>
  *
  * <p>
  * The service provides a singleton instance that can be accessed via {@link #getInstance()} and
- * returns an initialized {@link OpenAIClient} ready to make API requests.
+ * returns an {@link OpenAIClient} bound to the current thread context via {@link #getClient()}.
  * </p>
  */
 public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?>> {
+
+	/**
+	 * ThreadContext property key for storing the borrowed client.
+	 */
+	private static final Property<OpenAIClient> CONTEXT_CLIENT_KEY =
+		TypedAnnotatable.property(OpenAIClient.class, OpenAIService.class.getName() + ".client");
 
 	/**
 	 * Configuration interface for {@link OpenAIService}.
@@ -40,6 +57,8 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 		Config.BASE_URL,
 		Config.ORGANIZATION,
 		Config.PROJECT,
+		Config.MAX_POOL_SIZE,
+		Config.MAX_IDLE_CLIENTS,
 	})
 	@DisplayInherited(DisplayStrategy.PREPEND)
 	public interface Config<I extends OpenAIService> extends ConfiguredManagedClass.Config<I> {
@@ -71,6 +90,20 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 		 * @see #getProject()
 		 */
 		String PROJECT = "project";
+
+		/**
+		 * Configuration property name for maximum pool size.
+		 *
+		 * @see #getMaxPoolSize()
+		 */
+		String MAX_POOL_SIZE = "max-pool-size";
+
+		/**
+		 * Configuration property name for maximum idle clients.
+		 *
+		 * @see #getMaxIdleClients()
+		 */
+		String MAX_IDLE_CLIENTS = "max-idle-clients";
 
 		/**
 		 * The OpenAI API key for authentication.
@@ -123,11 +156,40 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 		@Name(PROJECT)
 		@Nullable
 		String getProject();
+
+		/**
+		 * The maximum number of clients in the pool.
+		 *
+		 * <p>
+		 * Default: 10
+		 * </p>
+		 * <p>
+		 * This limits the total number of OpenAI client instances that can be created.
+		 * If all clients are in use, additional requests will wait for a client to become available.
+		 * </p>
+		 */
+		@Name(MAX_POOL_SIZE)
+		@IntDefault(10)
+		int getMaxPoolSize();
+
+		/**
+		 * The maximum number of idle clients kept in the pool.
+		 *
+		 * <p>
+		 * Default: 5
+		 * </p>
+		 * <p>
+		 * Idle clients exceeding this number will be destroyed to free resources.
+		 * </p>
+		 */
+		@Name(MAX_IDLE_CLIENTS)
+		@IntDefault(5)
+		int getMaxIdleClients();
 	}
 
 	private static volatile OpenAIService _instance;
 
-	private OpenAIClient _client;
+	private ObjectPool<OpenAIClient> _clientPool;
 
 	/**
 	 * Creates a new {@link OpenAIService} from configuration.
@@ -137,6 +199,7 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 	 * @param config
 	 *        The service configuration.
 	 */
+	@CalledByReflection
 	public OpenAIService(InstantiationContext context, Config<?> config) {
 		super(context, config);
 	}
@@ -168,25 +231,21 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 					"' property in the service configuration.");
 			}
 
-			// Create OpenAI client builder with configured API key and base URL
-			OpenAIOkHttpClient.Builder builder = OpenAIOkHttpClient.builder()
-				.apiKey(apiKey)
-				.baseUrl(config.getBaseUrl());
+			// Create client factory
+			OpenAIClientFactory factory = new OpenAIClientFactory(
+				apiKey,
+				config.getBaseUrl(),
+				config.getOrganization(),
+				config.getProject());
 
-			// Add optional organization if configured
-			String organization = config.getOrganization();
-			if (organization != null) {
-				builder.organization(organization);
-			}
+			// Create and configure the pool
+			GenericObjectPool<OpenAIClient> pool = new GenericObjectPool<>(factory);
+			pool.setMaxActive(config.getMaxPoolSize());
+			pool.setMaxIdle(config.getMaxIdleClients());
+			pool.setTestOnBorrow(true);
+			pool.setWhenExhaustedAction(GenericObjectPool.WHEN_EXHAUSTED_BLOCK);
 
-			// Add optional project if configured
-			String project = config.getProject();
-			if (project != null) {
-				builder.project(project);
-			}
-
-			// Build the client
-			_client = builder.build();
+			_clientPool = pool;
 
 		} catch (RuntimeException ex) {
 			throw ex;
@@ -201,11 +260,15 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 			// Unregister singleton instance
 			_instance = null;
 
-			// Clean up OpenAI client resources
-			if (_client != null) {
-				// Note: The OpenAI Java client doesn't require explicit cleanup,
-				// but we set it to null to allow garbage collection
-				_client = null;
+			// Close the client pool
+			if (_clientPool != null) {
+				try {
+					_clientPool.close();
+				} catch (Exception ex) {
+					// Log but don't fail shutdown
+					System.err.println("Error closing OpenAI client pool: " + ex.getMessage());
+				}
+				_clientPool = null;
 			}
 		} finally {
 			super.shutDown();
@@ -213,11 +276,16 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 	}
 
 	/**
-	 * Returns the initialized OpenAI client ready to make API requests.
+	 * Returns an OpenAI client bound to the current {@link ThreadContext}.
 	 *
 	 * <p>
-	 * The client is configured with the API key and base URL from the service configuration.
-	 * You can use this client to interact with OpenAI models:
+	 * The client is borrowed from the pool and automatically returned when the current
+	 * {@link ThreadContext} is destroyed. Multiple calls to this method within the same
+	 * thread context will return the same client instance.
+	 * </p>
+	 *
+	 * <p>
+	 * Example usage:
 	 * </p>
 	 *
 	 * <pre>
@@ -232,10 +300,48 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 	 * ChatCompletion response = client.chat().completions().create(params);
 	 * </pre>
 	 *
-	 * @return The OpenAI client, or {@code null} if the service is not started.
+	 * @return The OpenAI client bound to the current thread context.
+	 * @throws RuntimeException
+	 *         If no client is available or the service is not started.
 	 */
 	public OpenAIClient getClient() {
-		return _client;
+		InteractionContext interaction = ThreadContextManager.getInteraction();
+		if (interaction == null) {
+			throw new RuntimeException(
+				"No ThreadContext available. OpenAI clients must be used within an InteractionContext.");
+		}
+
+		// Check if we already have a client for this thread context
+		OpenAIClient client = interaction.get(CONTEXT_CLIENT_KEY);
+		if (client != null) {
+			return client;
+		}
+
+		// Borrow a new client from the pool
+		final OpenAIClient newClient;
+		try {
+			newClient = _clientPool.borrowObject();
+		} catch (Exception ex) {
+			throw new RuntimeException("Failed to borrow OpenAI client from pool: " + ex.getMessage(), ex);
+		}
+
+		// Store in thread context
+		interaction.set(CONTEXT_CLIENT_KEY, client);
+
+		// Register cleanup callback to return client to pool when context is destroyed
+		interaction.addUnboundListener(new UnboundListener() {
+			@Override
+			public void threadUnbound(InteractionContext context) throws Throwable {
+				try {
+					_clientPool.returnObject(newClient);
+				} catch (Exception ex) {
+					// Log but don't fail cleanup
+					System.err.println("Error returning OpenAI client to pool: " + ex.getMessage());
+				}
+			}
+		});
+
+		return client;
 	}
 
 	/**

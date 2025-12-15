@@ -31,6 +31,8 @@
 			<instance class="com.top_logic.ai.openai.OpenAIService"
 				api-key="YOUR_OPENAI_API_KEY_HERE"
 				base-url="https://api.openai.com/v1"
+				max-pool-size="10"
+				max-idle-clients="5"
 			/>
 		</config>
 	</services>
