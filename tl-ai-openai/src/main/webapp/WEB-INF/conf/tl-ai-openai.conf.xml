@@ -3,5 +3,6 @@
 <!-- Main configuration file -->
 <root>
 	<alias>
+		<entry name="%OPENAI_API_KEY%" value="${env:tl_openai_apikey:}"/>
 	</alias>
 </root>
