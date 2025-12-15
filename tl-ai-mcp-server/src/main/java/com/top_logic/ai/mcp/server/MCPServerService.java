@@ -25,6 +25,7 @@ import com.top_logic.ai.mcp.server.tools.BackwardReferenceCreationTool;
 import com.top_logic.ai.mcp.server.tools.ClassCreationTool;
 import com.top_logic.ai.mcp.server.tools.ClassUpdateTool;
 import com.top_logic.ai.mcp.server.tools.EnumerationCreationTool;
+import com.top_logic.ai.mcp.server.tools.EnumerationUpdateTool;
 import com.top_logic.ai.mcp.server.tools.ModuleCreationTool;
 import com.top_logic.ai.mcp.server.tools.ModuleUpdateTool;
 import com.top_logic.ai.mcp.server.tools.PropertyCreationTool;
@@ -316,6 +317,9 @@ public class MCPServerService extends ConfiguredManagedClass<MCPServerService.Co
 
 		// Register tool for creating enumerations
 		builder.tools(EnumerationCreationTool.createSpecification());
+
+		// Register tool for updating enumerations
+		builder.tools(EnumerationUpdateTool.createSpecification());
 
 		// Register tool for validating TLScript
 		builder.tools(TLScriptValidationTool.createSpecification());
