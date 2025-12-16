@@ -27,6 +27,48 @@ import dev.langchain4j.model.chat.request.json.JsonStringSchema;
  */
 public class JsonSchemaConverter {
 
+	/** Schema field name for the schema name. */
+	private static final String FIELD_NAME = "name";
+
+	/** Schema field name for the schema definition. */
+	private static final String FIELD_SCHEMA = "schema";
+
+	/** Schema field name for property definitions. */
+	private static final String FIELD_PROPERTIES = "properties";
+
+	/** Schema field name for required properties list. */
+	private static final String FIELD_REQUIRED = "required";
+
+	/** Schema field name for property type. */
+	private static final String FIELD_TYPE = "type";
+
+	/** Schema field name for property description. */
+	private static final String FIELD_DESCRIPTION = "description";
+
+	/** Schema field name for enum values. */
+	private static final String FIELD_ENUM = "enum";
+
+	/** Schema field name for array item type. */
+	private static final String FIELD_ITEMS = "items";
+
+	/** Type name for string properties. */
+	private static final String TYPE_STRING = "string";
+
+	/** Type name for integer properties. */
+	private static final String TYPE_INTEGER = "integer";
+
+	/** Type name for number properties. */
+	private static final String TYPE_NUMBER = "number";
+
+	/** Type name for boolean properties. */
+	private static final String TYPE_BOOLEAN = "boolean";
+
+	/** Type name for array properties. */
+	private static final String TYPE_ARRAY = "array";
+
+	/** Type name for object properties. */
+	private static final String TYPE_OBJECT = "object";
+
 	/**
 	 * Converts a map-based schema definition to a {@link JsonSchema}.
 	 *
@@ -37,14 +79,14 @@ public class JsonSchemaConverter {
 	 *         If the schema definition is invalid.
 	 */
 	public static JsonSchema fromMap(Map<?, ?> schemaMap) {
-		String name = (String) schemaMap.get("name");
+		String name = (String) schemaMap.get(FIELD_NAME);
 		if (name == null) {
-			throw new IllegalArgumentException("JSON schema must contain a 'name' field.");
+			throw new IllegalArgumentException("JSON schema must contain a '" + FIELD_NAME + "' field.");
 		}
 
-		Object schema = schemaMap.get("schema");
+		Object schema = schemaMap.get(FIELD_SCHEMA);
 		if (schema == null) {
-			throw new IllegalArgumentException("JSON schema must contain a 'schema' field.");
+			throw new IllegalArgumentException("JSON schema must contain a '" + FIELD_SCHEMA + "' field.");
 		}
 
 		if (!(schema instanceof Map<?, ?> schemaPropsMap)) {
@@ -55,7 +97,7 @@ public class JsonSchemaConverter {
 		JsonObjectSchema.Builder rootBuilder = JsonObjectSchema.builder();
 
 		// Get required properties list
-		Object requiredObj = schemaPropsMap.get("required");
+		Object requiredObj = schemaPropsMap.get(FIELD_REQUIRED);
 		List<String> requiredProps = new ArrayList<>();
 		if (requiredObj instanceof List<?> reqList) {
 			for (Object item : reqList) {
@@ -66,7 +108,7 @@ public class JsonSchemaConverter {
 		}
 
 		// Parse and add properties
-		Object propertiesObj = schemaPropsMap.get("properties");
+		Object propertiesObj = schemaPropsMap.get(FIELD_PROPERTIES);
 		if (propertiesObj instanceof Map<?, ?> propertiesMap) {
 			addPropertiesToBuilder(rootBuilder, propertiesMap);
 		}
@@ -113,18 +155,18 @@ public class JsonSchemaConverter {
 	 */
 	private static void addProperty(JsonObjectSchema.Builder builder, String propertyName,
 			Map<?, ?> propertyDef) {
-		String type = (String) propertyDef.get("type");
+		String type = (String) propertyDef.get(FIELD_TYPE);
 
 		if (type == null) {
-			throw new IllegalArgumentException("Property '" + propertyName + "' must have a 'type' field.");
+			throw new IllegalArgumentException("Property '" + propertyName + "' must have a '" + FIELD_TYPE + "' field.");
 		}
 
-		String description = (String) propertyDef.get("description");
+		String description = (String) propertyDef.get(FIELD_DESCRIPTION);
 
 		switch (type.toLowerCase()) {
-			case "string":
+			case TYPE_STRING:
 				// Check for enum
-				Object enumValues = propertyDef.get("enum");
+				Object enumValues = propertyDef.get(FIELD_ENUM);
 				if (enumValues instanceof List<?> enumList) {
 					List<String> enumStrings = extractStringList(enumList);
 					if (description != null) {
@@ -142,7 +184,7 @@ public class JsonSchemaConverter {
 				}
 				break;
 
-			case "integer":
+			case TYPE_INTEGER:
 				if (description != null) {
 					builder.addIntegerProperty(propertyName, description);
 				} else {
@@ -150,7 +192,7 @@ public class JsonSchemaConverter {
 				}
 				break;
 
-			case "number":
+			case TYPE_NUMBER:
 				if (description != null) {
 					builder.addNumberProperty(propertyName, description);
 				} else {
@@ -158,7 +200,7 @@ public class JsonSchemaConverter {
 				}
 				break;
 
-			case "boolean":
+			case TYPE_BOOLEAN:
 				if (description != null) {
 					builder.addBooleanProperty(propertyName, description);
 				} else {
@@ -166,11 +208,11 @@ public class JsonSchemaConverter {
 				}
 				break;
 
-			case "array":
+			case TYPE_ARRAY:
 				builder.addProperty(propertyName, buildArraySchema(propertyDef));
 				break;
 
-			case "object":
+			case TYPE_OBJECT:
 				builder.addProperty(propertyName, buildObjectSchema(propertyDef));
 				break;
 
@@ -187,29 +229,29 @@ public class JsonSchemaConverter {
 	 * @return The parsed schema element.
 	 */
 	private static JsonSchemaElement parseSchemaElement(Map<?, ?> elementDef) {
-		String type = (String) elementDef.get("type");
+		String type = (String) elementDef.get(FIELD_TYPE);
 
 		if (type == null) {
-			throw new IllegalArgumentException("Schema element must have a 'type' field.");
+			throw new IllegalArgumentException("Schema element must have a '" + FIELD_TYPE + "' field.");
 		}
 
 		switch (type.toLowerCase()) {
-			case "string":
+			case TYPE_STRING:
 				return buildStringSchema(elementDef);
 
-			case "integer":
+			case TYPE_INTEGER:
 				return buildIntegerSchema(elementDef);
 
-			case "number":
+			case TYPE_NUMBER:
 				return buildNumberSchema(elementDef);
 
-			case "boolean":
+			case TYPE_BOOLEAN:
 				return buildBooleanSchema(elementDef);
 
-			case "array":
+			case TYPE_ARRAY:
 				return buildArraySchema(elementDef);
 
-			case "object":
+			case TYPE_OBJECT:
 				return buildObjectSchema(elementDef);
 
 			default:
@@ -222,7 +264,7 @@ public class JsonSchemaConverter {
 	 */
 	private static JsonStringSchema buildStringSchema(Map<?, ?> def) {
 		JsonStringSchema.Builder builder = JsonStringSchema.builder();
-		String description = (String) def.get("description");
+		String description = (String) def.get(FIELD_DESCRIPTION);
 		if (description != null) {
 			builder.description(description);
 		}
@@ -234,7 +276,7 @@ public class JsonSchemaConverter {
 	 */
 	private static JsonIntegerSchema buildIntegerSchema(Map<?, ?> def) {
 		JsonIntegerSchema.Builder builder = JsonIntegerSchema.builder();
-		String description = (String) def.get("description");
+		String description = (String) def.get(FIELD_DESCRIPTION);
 		if (description != null) {
 			builder.description(description);
 		}
@@ -246,7 +288,7 @@ public class JsonSchemaConverter {
 	 */
 	private static JsonNumberSchema buildNumberSchema(Map<?, ?> def) {
 		JsonNumberSchema.Builder builder = JsonNumberSchema.builder();
-		String description = (String) def.get("description");
+		String description = (String) def.get(FIELD_DESCRIPTION);
 		if (description != null) {
 			builder.description(description);
 		}
@@ -258,7 +300,7 @@ public class JsonSchemaConverter {
 	 */
 	private static JsonBooleanSchema buildBooleanSchema(Map<?, ?> def) {
 		JsonBooleanSchema.Builder builder = JsonBooleanSchema.builder();
-		String description = (String) def.get("description");
+		String description = (String) def.get(FIELD_DESCRIPTION);
 		if (description != null) {
 			builder.description(description);
 		}
@@ -270,12 +312,12 @@ public class JsonSchemaConverter {
 	 */
 	private static JsonArraySchema buildArraySchema(Map<?, ?> def) {
 		JsonArraySchema.Builder builder = JsonArraySchema.builder();
-		String description = (String) def.get("description");
+		String description = (String) def.get(FIELD_DESCRIPTION);
 		if (description != null) {
 			builder.description(description);
 		}
 
-		Object itemsObj = def.get("items");
+		Object itemsObj = def.get(FIELD_ITEMS);
 		if (itemsObj instanceof Map<?, ?> itemsDef) {
 			builder.items(parseSchemaElement(itemsDef));
 		}
@@ -288,19 +330,19 @@ public class JsonSchemaConverter {
 	 */
 	private static JsonObjectSchema buildObjectSchema(Map<?, ?> def) {
 		JsonObjectSchema.Builder builder = JsonObjectSchema.builder();
-		String description = (String) def.get("description");
+		String description = (String) def.get(FIELD_DESCRIPTION);
 		if (description != null) {
 			builder.description(description);
 		}
 
 		// Add properties
-		Object propertiesObj = def.get("properties");
+		Object propertiesObj = def.get(FIELD_PROPERTIES);
 		if (propertiesObj instanceof Map<?, ?> propertiesMap) {
 			addPropertiesToBuilder(builder, propertiesMap);
 		}
 
 		// Add required properties
-		Object requiredObj = def.get("required");
+		Object requiredObj = def.get(FIELD_REQUIRED);
 		if (requiredObj instanceof List<?> reqList) {
 			List<String> requiredProps = extractStringList(reqList);
 			if (!requiredProps.isEmpty()) {
