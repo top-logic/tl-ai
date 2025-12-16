@@ -8,7 +8,7 @@
 		<version>7.10.0-SNAPSHOT</version>	
 	</parent>
 	
-	<artifactId>tl-ai-openai</artifactId>
+	<artifactId>tl-ai-service</artifactId>
 	
 	<name>TL AI Service Integrations</name>
 	
