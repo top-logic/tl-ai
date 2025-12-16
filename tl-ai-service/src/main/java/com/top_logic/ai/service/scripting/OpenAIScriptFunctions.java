@@ -33,6 +33,17 @@ import dev.langchain4j.data.message.VideoContent;
 import dev.langchain4j.data.pdf.PdfFile;
 import dev.langchain4j.data.video.Video;
 import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.request.ChatRequest;
+import dev.langchain4j.model.chat.request.ResponseFormat;
+import dev.langchain4j.model.chat.request.ResponseFormatType;
+import dev.langchain4j.model.chat.request.json.JsonArraySchema;
+import dev.langchain4j.model.chat.request.json.JsonBooleanSchema;
+import dev.langchain4j.model.chat.request.json.JsonIntegerSchema;
+import dev.langchain4j.model.chat.request.json.JsonNumberSchema;
+import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
+import dev.langchain4j.model.chat.request.json.JsonSchema;
+import dev.langchain4j.model.chat.request.json.JsonSchemaElement;
+import dev.langchain4j.model.chat.request.json.JsonStringSchema;
 import dev.langchain4j.model.chat.response.ChatResponse;
 
 /**
@@ -73,9 +84,18 @@ public class OpenAIScriptFunctions extends TLScriptFunctions {
 	 * @param model
 	 *        The model name to use (e.g., "gpt-4o", "gpt-3.5-turbo"), or {@code null} to use
 	 *        the default model configured in {@link OpenAIService}.
+	 * @param responseFormat
+	 *        The response format specification. Can be:
+	 *        <ul>
+	 *        <li>{@code null}: No specific format requirement</li>
+	 *        <li>String "text" or "json": Simple format type</li>
+	 *        <li>Map with "type" and optional "jsonSchema": Structured JSON output. The map should
+	 *        contain a "type" field (e.g., "json") and optionally a "jsonSchema" map with "name"
+	 *        and "schema" fields for structured output.</li>
+	 *        </ul>
 	 * @return The assistant's response text.
 	 */
-	public static String chat(List<Object> messages, String model) {
+	public static String chat(List<Object> messages, String model, Object responseFormat) {
 		ChatModel chatModel = OpenAIService.getInstance().getChatModel(model);
 
 		List<ChatMessage> chatMessages = new ArrayList<>();
@@ -103,8 +123,185 @@ public class OpenAIScriptFunctions extends TLScriptFunctions {
 			}
 		}
 
-		ChatResponse response = chatModel.chat(chatMessages);
+		// Build chat request with optional response format
+		ChatRequest.Builder requestBuilder = ChatRequest.builder()
+			.messages(chatMessages);
+
+		if (model != null) {
+			requestBuilder.modelName(model);
+		}
+
+		ResponseFormat format = parseResponseFormat(responseFormat);
+		if (format != null) {
+			requestBuilder.responseFormat(format);
+		}
+
+		ChatResponse response = chatModel.chat(requestBuilder.build());
 		return response.aiMessage().text();
+	}
+
+	/**
+	 * Parses the response format parameter into a {@link ResponseFormat} object.
+	 *
+	 * @param responseFormat
+	 *        The response format specification - can be {@code null}, a String, or a Map.
+	 * @return The parsed {@link ResponseFormat}, or {@code null} if no format specified.
+	 * @throws IllegalArgumentException
+	 *         If the format specification is invalid.
+	 */
+	private static ResponseFormat parseResponseFormat(Object responseFormat) {
+		if (responseFormat == null) {
+			return null;
+		}
+
+		if (responseFormat instanceof String formatStr) {
+			return switch (formatStr.toLowerCase()) {
+				case "text" -> ResponseFormat.builder().type(ResponseFormatType.TEXT).build();
+				case "json" -> ResponseFormat.builder().type(ResponseFormatType.JSON).build();
+				default -> throw new IllegalArgumentException(
+					"Invalid response format string: '" + formatStr + "'. Must be 'text' or 'json'.");
+			};
+		}
+
+		if (responseFormat instanceof Map<?, ?> formatMap) {
+			String type = (String) formatMap.get("type");
+			if (type == null) {
+				throw new IllegalArgumentException("Response format map must contain a 'type' field.");
+			}
+
+			ResponseFormat.Builder builder = ResponseFormat.builder();
+
+			switch (type.toLowerCase()) {
+				case "text":
+					builder.type(ResponseFormatType.TEXT);
+					break;
+				case "json":
+					builder.type(ResponseFormatType.JSON);
+					Object jsonSchemaObj = formatMap.get("jsonSchema");
+					if (jsonSchemaObj instanceof Map<?, ?> schemaMap) {
+						builder.jsonSchema(parseJsonSchema(schemaMap));
+					}
+					break;
+				default:
+					throw new IllegalArgumentException(
+						"Invalid response format type: '" + type + "'. Must be 'text' or 'json'.");
+			}
+
+			return builder.build();
+		}
+
+		throw new IllegalArgumentException(
+			"Response format must be a String or Map, got: " + responseFormat.getClass().getName());
+	}
+
+	/**
+	 * Parses a JSON schema map into a {@link JsonSchema} object.
+	 *
+	 * @param schemaMap
+	 *        The schema map containing "name" and "schema" fields.
+	 * @return The parsed {@link JsonSchema}.
+	 * @throws IllegalArgumentException
+	 *         If the schema map is invalid.
+	 */
+	private static JsonSchema parseJsonSchema(Map<?, ?> schemaMap) {
+		String name = (String) schemaMap.get("name");
+		if (name == null) {
+			throw new IllegalArgumentException("JSON schema must contain a 'name' field.");
+		}
+
+		Object schema = schemaMap.get("schema");
+		if (schema == null) {
+			throw new IllegalArgumentException("JSON schema must contain a 'schema' field.");
+		}
+
+		// The schema is expected to be a JSON schema definition (typically a Map)
+		// LangChain4j's JsonSchema.builder() expects a JsonSchemaElement which can be
+		// constructed from JSON-like structures
+		return JsonSchema.builder()
+			.name(name)
+			.rootElement(JsonObjectSchema.builder()
+				.addProperties(parseSchemaProperties(schema))
+				.build())
+			.build();
+	}
+
+	/**
+	 * Parses schema properties from a map structure.
+	 *
+	 * @param schema
+	 *        The schema object (typically a Map).
+	 * @return A map of property names to their schema elements.
+	 */
+	private static Map<String, JsonSchemaElement> parseSchemaProperties(Object schema) {
+		if (!(schema instanceof Map<?, ?> schemaMap)) {
+			throw new IllegalArgumentException("Schema must be a Map.");
+		}
+
+		Map<String, JsonSchemaElement> properties = new java.util.HashMap<>();
+
+		for (Map.Entry<?, ?> entry : schemaMap.entrySet()) {
+			String propertyName = (String) entry.getKey();
+			Object propertyValue = entry.getValue();
+
+			if (propertyValue instanceof Map<?, ?> propertyMap) {
+				String type = (String) propertyMap.get("type");
+				String description = (String) propertyMap.get("description");
+
+				if (type != null) {
+					switch (type.toLowerCase()) {
+						case "string":
+							properties.put(propertyName,
+								JsonStringSchema.builder()
+									.description(description)
+									.build());
+							break;
+						case "integer":
+							properties.put(propertyName,
+								JsonIntegerSchema.builder()
+									.description(description)
+									.build());
+							break;
+						case "number":
+							properties.put(propertyName,
+								JsonNumberSchema.builder()
+									.description(description)
+									.build());
+							break;
+						case "boolean":
+							properties.put(propertyName,
+								JsonBooleanSchema.builder()
+									.description(description)
+									.build());
+							break;
+						case "array":
+							properties.put(propertyName,
+								JsonArraySchema.builder()
+									.description(description)
+									.build());
+							break;
+						case "object":
+							Object nestedProps = propertyMap.get("properties");
+							if (nestedProps != null) {
+								properties.put(propertyName,
+									JsonObjectSchema.builder()
+										.description(description)
+										.addProperties(parseSchemaProperties(nestedProps))
+										.build());
+							} else {
+								properties.put(propertyName,
+									JsonObjectSchema.builder()
+										.description(description)
+										.build());
+							}
+							break;
+						default:
+							throw new IllegalArgumentException("Unsupported schema type: " + type);
+					}
+				}
+			}
+		}
+
+		return properties;
 	}
 
 	/**
