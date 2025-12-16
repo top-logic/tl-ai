@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<model xmlns="http://www.top-logic.com/ns/dynamic-types/6.0">
+	<module name="tl.ai.demo.imageclassification">
+		<annotations>
+			<display-group value="ai-demo"/>
+		</annotations>
+		<class name="Invoice">
+			<generalizations>
+				<generalization type="tl.model:TLObject"/>
+			</generalizations>
+			<annotations>
+				<form-definition>
+					<form>
+						<field
+							attribute="date"
+							fullQualifiedName="tl.ai.demo.imageclassification:Invoice#date"
+							type="tl.core:Date"
+						/>
+						<field
+							attribute="description"
+							fullQualifiedName="tl.ai.demo.imageclassification:Invoice#description"
+							type="tl.core:String"
+						/>
+						<field
+							attribute="amount"
+							fullQualifiedName="tl.ai.demo.imageclassification:Invoice#amount"
+							type="tl.core:Double"
+						/>
+						<field
+							attribute="data"
+							fullQualifiedName="tl.ai.demo.imageclassification:Invoice#data"
+							type="tl.core:Binary"
+						/>
+					</form>
+				</form-definition>
+			</annotations>
+			<attributes>
+				<property name="data"
+					mandatory="true"
+					type="tl.core:Binary"
+				/>
+				<property name="date"
+					type="tl.core:Date"
+				/>
+				<property name="description"
+					type="tl.core:String"
+				/>
+				<property name="amount"
+					type="tl.core:Double"
+				/>
+			</attributes>
+		</class>
+	</module>
+</model>

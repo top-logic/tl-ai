@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<config:template-call
+	xmlns:config="http://www.top-logic.com/ns/config/6.0"
+	final="true"
+	template="com.top_logic/maintabbar.template.xml"
+>
+	<arguments>
+		<components>
+			<layout-reference resource="tl-ai-demo/invoices/tabLayout.layout.xml">
+				<content-layouting class="com.top_logic.layout.structure.ContentLayouting">
+					<contextMenuFactory class="com.top_logic.layout.basic.contextmenu.component.factory.PlainComponentContextMenuFactory">
+						<titleProvider class="com.top_logic.layout.provider.label.NoLabelProvider"/>
+						<customCommands class="com.top_logic.layout.basic.contextmenu.config.NoContextMenuCommands"/>
+					</contextMenuFactory>
+				</content-layouting>
+			</layout-reference>
+			<layout-reference resource="com.top_logic.bpe.app/processCockpit/cockpitTab.layout.xml">
+				<content-layouting class="com.top_logic.layout.structure.ContentLayouting">
+					<contextMenuFactory class="com.top_logic.layout.basic.contextmenu.component.factory.PlainComponentContextMenuFactory">
+						<titleProvider class="com.top_logic.layout.provider.label.NoLabelProvider"/>
+						<customCommands class="com.top_logic.layout.basic.contextmenu.config.NoContextMenuCommands"/>
+					</contextMenuFactory>
+				</content-layouting>
+			</layout-reference>
+			<layout-reference resource="com.top_logic.model.search/search/modelSearch.layout.xml">
+				<content-layouting class="com.top_logic.layout.structure.ContentLayouting">
+					<contextMenuFactory class="com.top_logic.layout.basic.contextmenu.component.factory.PlainComponentContextMenuFactory">
+						<titleProvider class="com.top_logic.layout.provider.label.NoLabelProvider"/>
+						<customCommands class="com.top_logic.layout.basic.contextmenu.config.NoContextMenuCommands"/>
+					</contextMenuFactory>
+				</content-layouting>
+			</layout-reference>
+			<layout-reference resource="admin/index.layout.xml">
+				<content-layouting class="com.top_logic.layout.structure.ContentLayouting">
+					<contextMenuFactory class="com.top_logic.layout.basic.contextmenu.component.factory.PlainComponentContextMenuFactory">
+						<titleProvider class="com.top_logic.layout.provider.label.NoLabelProvider"/>
+						<customCommands class="com.top_logic.layout.basic.contextmenu.config.NoContextMenuCommands"/>
+					</contextMenuFactory>
+				</content-layouting>
+			</layout-reference>
+		</components>
+		<dialogs>
+			<layout-reference resource="com.top_logic.monitoring/admin/technical/logs/logLines.sessionDialog.layout.xml">
+				<content-layouting class="com.top_logic.layout.structure.ContentLayouting">
+					<contextMenuFactory class="com.top_logic.layout.basic.contextmenu.component.factory.PlainComponentContextMenuFactory">
+						<titleProvider class="com.top_logic.layout.provider.label.NoLabelProvider"/>
+						<customCommands class="com.top_logic.layout.basic.contextmenu.config.NoContextMenuCommands"/>
+					</contextMenuFactory>
+				</content-layouting>
+			</layout-reference>
+		</dialogs>
+	</arguments>
+</config:template-call>

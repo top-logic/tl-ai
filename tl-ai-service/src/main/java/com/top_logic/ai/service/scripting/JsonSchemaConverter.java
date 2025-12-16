@@ -125,8 +125,7 @@ public class JsonSchemaConverter {
 	}
 
 	/**
-	 * Adds properties to a {@link dev.langchain4j.model.chat.request.json.JsonObjectSchema.Builder}
-	 * using individual property methods.
+	 * Adds properties to a {@link dev.langchain4j.model.chat.request.json.JsonObjectSchema.Builder} using individual property methods.
 	 *
 	 * @param builder
 	 *        The builder to add properties to.
@@ -145,9 +144,7 @@ public class JsonSchemaConverter {
 	}
 
 	/**
-	 * Adds a single property to a
-	 * {@link dev.langchain4j.model.chat.request.json.JsonObjectSchema.Builder} based on its
-	 * definition.
+	 * Adds a single property to a {@link dev.langchain4j.model.chat.request.json.JsonObjectSchema.Builder} based on its definition.
 	 *
 	 * @param builder
 	 *        The builder to add the property to.
