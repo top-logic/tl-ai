@@ -22,16 +22,13 @@ Demo application showcasing AI integration features including chat interactions,
 - Java 17+
 - Maven 3.8+
 - TopLogic 7.10.0-SNAPSHOT
-- API keys for AI providers (OpenAI, Anthropic, or Mistral)
+- Optional: API keys for AI providers (OpenAI, Anthropic, or Mistral)
 
 ### Build
 
 ```bash
 # Build all modules
 mvn clean install
-
-# Skip tests
-mvn clean install -DskipTests
 ```
 
 ### Configuration
@@ -39,9 +36,9 @@ mvn clean install -DskipTests
 Set your API keys as environment variables:
 
 ```bash
-export OPENAI_API_KEY="sk-..."
-export ANTHROPIC_API_KEY="sk-ant-..."
-export MISTRAL_API_KEY="..."
+export tl_openai_apikey="sk-..."
+export tl_antropic_apikey="sk-ant-..."
+export tl_mistral_apikey="..."
 ```
 
 Configure AI models in `tl-ai-service/src/main/webapp/WEB-INF/conf/tl-ai-service.config.xml`.
@@ -50,26 +47,7 @@ Configure AI models in `tl-ai-service/src/main/webapp/WEB-INF/conf/tl-ai-service
 
 ```bash
 cd tl-ai-demo
-mvn jetty:run
+mvn
 ```
 
 Access at: http://localhost:8080/tl-ai-demo/
-
-## Features
-
-- **Multiple AI Providers**: OpenAI (GPT-4o, GPT-3.5), Anthropic (Claude), Mistral AI
-- **Thread-Safe Pooling**: Automatic model lifecycle management
-- **TL-Script Integration**: AI functions accessible from expressions
-- **Structured Output**: JSON schemas for type-safe responses
-- **Multimodal Support**: Text, images, audio, video, PDF documents
-- **MCP Server**: Standard protocol for AI agent integration
-- **Chat UI**: Ready-to-use conversational components
-
-## Documentation
-
-- [TL AI Service Documentation](tl-ai-service/README.md) - AI integration and TL-Script functions
-- [CLAUDE.md](CLAUDE.md) - Development guidelines and project structure
-
-## License
-
-Copyright (c) 2025 My Company. All Rights Reserved
