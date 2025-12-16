@@ -1,6 +1,6 @@
 # TopLogic AI Integration
 
-AI integration for TopLogic applications with LLM support, MCP server capabilities, and chat functionality.
+[AI integration](https://github.com/top-logic/tl-ai) for [TopLogic](https://github.com/top-logic/tl-engine) applications with LLM support, MCP server capabilities, and chat functionality.
 
 ## Modules
 
