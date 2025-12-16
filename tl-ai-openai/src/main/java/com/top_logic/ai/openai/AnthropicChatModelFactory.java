@@ -3,6 +3,9 @@
  */
 package com.top_logic.ai.openai;
 
+import java.util.Collections;
+import java.util.List;
+
 import com.top_logic.basic.config.InstantiationContext;
 import com.top_logic.basic.config.annotation.Encrypted;
 import com.top_logic.basic.config.annotation.Name;
@@ -117,5 +120,11 @@ public class AnthropicChatModelFactory extends ChatModelFactory {
 		}
 
 		return builder.build();
+	}
+
+	@Override
+	protected List<String> getAvailableModels() throws Exception {
+		// Anthropic does not provide a models listing API
+		return Collections.emptyList();
 	}
 }

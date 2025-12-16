@@ -3,6 +3,9 @@
  */
 package com.top_logic.ai.openai;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import com.top_logic.basic.config.InstantiationContext;
 import com.top_logic.basic.config.annotation.Encrypted;
 import com.top_logic.basic.config.annotation.Name;
@@ -11,6 +14,7 @@ import com.top_logic.basic.config.annotation.defaults.StringDefault;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.model.openai.internal.DefaultOpenAiClient;
 
 /**
  * Factory for creating OpenAI chat model instances.
@@ -122,5 +126,28 @@ public class OpenAIChatModelFactory extends ChatModelFactory {
 		}
 
 		return builder.build();
+	}
+
+	@Override
+	protected List<String> getAvailableModels() throws Exception {
+		Config config = getConfig();
+
+		// Create an OpenAI client to list available models
+		DefaultOpenAiClient.Builder clientBuilder = DefaultOpenAiClient.builder()
+			.apiKey(config.getApiKey())
+			.baseUrl(config.getBaseUrl());
+
+		// Add optional organization if configured
+		String organization = config.getOrganization();
+		if (organization != null) {
+			clientBuilder.organizationId(organization);
+		}
+
+		DefaultOpenAiClient client = clientBuilder.build();
+
+		// Query the API for available models and extract their IDs
+		return client.listModels().stream()
+			.map(model -> model.id())
+			.collect(Collectors.toList());
 	}
 }

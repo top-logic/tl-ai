@@ -204,4 +204,19 @@ public abstract class ChatModelFactory implements ConfiguredInstance<ChatModelFa
 	 *         If the model cannot be created.
 	 */
 	protected abstract ChatModel createModel(String modelName) throws Exception;
+
+	/**
+	 * Returns the list of available models from the provider.
+	 *
+	 * <p>
+	 * This method queries the AI provider's API to get the list of models that can be used.
+	 * It is called when the configuration does not specify any models (empty list).
+	 * </p>
+	 *
+	 * @return A list of available model names, or an empty list if the provider does not
+	 *         support model listing.
+	 * @throws Exception
+	 *         If the model list cannot be retrieved.
+	 */
+	protected abstract List<String> getAvailableModels() throws Exception;
 }

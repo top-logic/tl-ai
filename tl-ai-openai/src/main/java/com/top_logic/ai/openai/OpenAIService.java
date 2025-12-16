@@ -151,9 +151,6 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 			InstantiationContext context = new DefaultInstantiationContext(OpenAIService.class);
 			for (ChatModelFactory.Config<?> factoryConfig : factoryConfigs) {
 				List<String> modelNames = factoryConfig.getModels();
-				if (modelNames.isEmpty()) {
-					throw new RuntimeException("At least one model must be configured for each factory.");
-				}
 
 				// Create the factory
 				ChatModelFactory factory = context.getInstance(factoryConfig);
@@ -161,6 +158,20 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 				// Skip factories without valid configuration (e.g., missing API keys)
 				if (!factory.hasValidConfiguration()) {
 					continue;
+				}
+
+				// If no models are configured, query the provider for available models
+				if (modelNames.isEmpty()) {
+					try {
+						modelNames = factory.getAvailableModels();
+						if (modelNames.isEmpty()) {
+							// Provider does not support model listing - skip this factory
+							continue;
+						}
+					} catch (Exception ex) {
+						throw new RuntimeException(
+							"Failed to retrieve available models from provider: " + ex.getMessage(), ex);
+					}
 				}
 
 				// Create a pool for each model using this factory
