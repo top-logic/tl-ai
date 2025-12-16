@@ -74,16 +74,15 @@ public class OpenAIScriptFunctions extends TLScriptFunctions {
 	 *        <li>Binary data: Treated as user image/document message</li>
 	 *        </ul>
 	 * @param model
-	 *        The model name to use (e.g., "gpt-4o", "gpt-3.5-turbo"), or {@code null} to use
-	 *        the default model configured in {@link OpenAIService}.
+	 *        The model name to use (e.g., "gpt-4o", "gpt-3.5-turbo"), or {@code null} to use the
+	 *        default model configured in {@link OpenAIService}.
 	 * @param responseFormat
 	 *        The response format specification. Can be:
 	 *        <ul>
 	 *        <li>{@code null}: No specific format requirement</li>
 	 *        <li>String "text" or "json": Simple format type</li>
-	 *        <li>Map with "type" and optional "jsonSchema": Structured JSON output. The map should
-	 *        contain a "type" field (e.g., "json") and optionally a "jsonSchema" map with "name"
-	 *        and "schema" fields for structured output.</li>
+	 *        <li>Map with "name" and "schema" fields describing a JSON schema for structured
+	 *        output.</li>
 	 *        </ul>
 	 * @return The assistant's response text.
 	 */
@@ -156,29 +155,9 @@ public class OpenAIScriptFunctions extends TLScriptFunctions {
 		}
 
 		if (responseFormat instanceof Map<?, ?> formatMap) {
-			String type = (String) formatMap.get("type");
-			if (type == null) {
-				throw new IllegalArgumentException("Response format map must contain a 'type' field.");
-			}
-
 			ResponseFormat.Builder builder = ResponseFormat.builder();
-
-			switch (type.toLowerCase()) {
-				case "text":
-					builder.type(ResponseFormatType.TEXT);
-					break;
-				case "json":
-					builder.type(ResponseFormatType.JSON);
-					Object jsonSchemaObj = formatMap.get("jsonSchema");
-					if (jsonSchemaObj instanceof Map<?, ?> schemaMap) {
-						builder.jsonSchema(JsonSchemaConverter.fromMap(schemaMap));
-					}
-					break;
-				default:
-					throw new IllegalArgumentException(
-						"Invalid response format type: '" + type + "'. Must be 'text' or 'json'.");
-			}
-
+			builder.type(ResponseFormatType.JSON);
+			builder.jsonSchema(JsonSchemaConverter.fromMap(formatMap));
 			return builder.build();
 		}
 
