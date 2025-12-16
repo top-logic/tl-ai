@@ -53,7 +53,6 @@
 					<!-- Mistral AI models factory -->
 					<factory
 						class="com.top_logic.ai.openai.MistralChatModelFactory"
-						models="mistral-large-latest, mistral-small-latest"
 						api-key="%MISTRAL_API_KEY%"
 						base-url="https://api.mistral.ai/v1"
 						max-pool-size="10"

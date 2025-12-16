@@ -124,7 +124,7 @@ public class AnthropicChatModelFactory extends ChatModelFactory {
 
 	@Override
 	protected List<String> getAvailableModels() throws Exception {
-		// Anthropic does not provide a models listing API
+		// Model listing not available for Anthropic.
 		return Collections.emptyList();
 	}
 }

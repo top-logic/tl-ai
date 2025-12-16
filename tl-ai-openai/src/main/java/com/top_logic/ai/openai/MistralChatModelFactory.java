@@ -109,8 +109,8 @@ public class MistralChatModelFactory extends ChatModelFactory {
 			.build();
 
 		// Query the API for available models and extract their IDs
-		return client.listModels().stream()
-			.map(model -> model.id())
+		return client.listModels().getData().stream()
+			.map(model -> model.getId())
 			.collect(Collectors.toList());
 	}
 }
