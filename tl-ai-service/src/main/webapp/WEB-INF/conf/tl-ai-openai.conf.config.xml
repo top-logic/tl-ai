@@ -2,14 +2,6 @@
 
 <application xmlns:config="http://www.top-logic.com/ns/config/6.0">
 	<services>
-		<config service-class="com.top_logic.basic.util.ResourcesModule">
-			<instance>
-				<bundles>
-					<bundle name="tl-ai-openai.app-messages" />
-				</bundles>
-			</instance>
-		</config>
-		
 		<config service-class="com.top_logic.knowledge.service.migration.MigrationService">
 			<instance>
 				<modules>
@@ -22,19 +14,19 @@
 			<instance>
 				<modules>
 					<!-- OpenAI Service for OpenAI API integration -->
-					<module key="com.top_logic.ai.openai.OpenAIService$Module" value="true"/>
+					<module key="com.top_logic.ai.service.OpenAIService$Module" value="true"/>
 				</modules>
 			</instance>
 		</config>
 
-		<config service-class="com.top_logic.ai.openai.OpenAIService">
-			<instance class="com.top_logic.ai.openai.OpenAIService"
+		<config service-class="com.top_logic.ai.service.OpenAIService">
+			<instance class="com.top_logic.ai.service.OpenAIService"
 				default-model="gpt-4o"
 			>
 				<factories>
 					<!-- OpenAI models factory -->
 					<factory
-						class="com.top_logic.ai.openai.providers.OpenAIChatModelFactory"
+						class="com.top_logic.ai.service.providers.OpenAIChatModelFactory"
 						models="gpt-4o, gpt-4o-mini, gpt-3.5-turbo"
 						api-key="%OPENAI_API_KEY%"
 						base-url="https://api.openai.com/v1"
@@ -43,7 +35,7 @@
 					/>
 					<!-- Anthropic Claude models factory -->
 					<factory
-						class="com.top_logic.ai.openai.providers.AnthropicChatModelFactory"
+						class="com.top_logic.ai.service.providers.AnthropicChatModelFactory"
 						models="claude-3-5-sonnet-20241022, claude-3-5-haiku-20241022, claude-3-opus-20240229"
 						api-key="%ANTHROPIC_API_KEY%"
 						base-url="https://api.anthropic.com/v1"
@@ -52,7 +44,7 @@
 					/>
 					<!-- Mistral AI models factory -->
 					<factory
-						class="com.top_logic.ai.openai.providers.MistralChatModelFactory"
+						class="com.top_logic.ai.service.providers.MistralChatModelFactory"
 						api-key="%MISTRAL_API_KEY%"
 						base-url="https://api.mistral.ai/v1"
 						max-pool-size="10"
@@ -62,15 +54,4 @@
 			</instance>
 		</config>
 	</services>
-
-	<configs>
-		<config config:interface="com.top_logic.basic.db.schema.setup.config.ApplicationTypes">
-			<type-systems>
-				<type-system name="Default">
-					<declarations>
-					</declarations>
-				</type-system>
-			</type-systems>
-		</config>
-	</configs>
 </application>

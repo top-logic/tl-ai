@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 My Company. All Rights Reserved
  */
-package com.top_logic.ai.openai.scripting;
+package com.top_logic.ai.service.scripting;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -12,7 +12,7 @@ import java.util.Map;
 import jakarta.activation.MimeType;
 import jakarta.activation.MimeTypeParseException;
 
-import com.top_logic.ai.openai.OpenAIService;
+import com.top_logic.ai.service.OpenAIService;
 import com.top_logic.basic.StringServices;
 import com.top_logic.basic.io.StreamUtilities;
 import com.top_logic.basic.io.binary.BinaryDataSource;

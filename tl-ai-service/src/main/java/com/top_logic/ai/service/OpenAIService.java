@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 My Company. All Rights Reserved
  */
-package com.top_logic.ai.openai;
+package com.top_logic.ai.service;
 
 import java.util.HashMap;
 import java.util.List;
