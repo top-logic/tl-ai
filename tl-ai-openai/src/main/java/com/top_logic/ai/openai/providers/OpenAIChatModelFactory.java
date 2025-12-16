@@ -1,34 +1,35 @@
 /*
  * Copyright (c) 2025 My Company. All Rights Reserved
  */
-package com.top_logic.ai.openai;
+package com.top_logic.ai.openai.providers;
 
 import java.util.Collections;
 import java.util.List;
 
+import com.top_logic.ai.openai.ChatModelFactory;
 import com.top_logic.basic.config.InstantiationContext;
 import com.top_logic.basic.config.annotation.Encrypted;
 import com.top_logic.basic.config.annotation.Name;
 import com.top_logic.basic.config.annotation.Nullable;
 import com.top_logic.basic.config.annotation.defaults.StringDefault;
 
-import dev.langchain4j.model.anthropic.AnthropicChatModel;
 import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.openai.OpenAiChatModel;
 
 /**
- * Factory for creating Anthropic chat model instances.
+ * Factory for creating OpenAI chat model instances.
  *
  * <p>
- * This factory creates {@link ChatModel} instances using the Anthropic API
- * for Claude models.
+ * This factory creates {@link ChatModel} instances using the OpenAI API
+ * (or compatible APIs like Azure OpenAI).
  * </p>
  */
-public class AnthropicChatModelFactory extends ChatModelFactory {
+public class OpenAIChatModelFactory extends ChatModelFactory {
 
 	/**
-	 * Configuration interface for {@link AnthropicChatModelFactory}.
+	 * Configuration interface for {@link OpenAIChatModelFactory}.
 	 */
-	public interface Config extends ChatModelFactory.Config<AnthropicChatModelFactory> {
+	public interface Config extends ChatModelFactory.Config<OpenAIChatModelFactory> {
 
 		/**
 		 * Configuration property name for API key.
@@ -45,51 +46,56 @@ public class AnthropicChatModelFactory extends ChatModelFactory {
 		String BASE_URL = "base-url";
 
 		/**
-		 * Configuration property name for version.
+		 * Configuration property name for organization.
 		 *
-		 * @see #getVersion()
+		 * @see #getOrganization()
 		 */
-		String VERSION = "version";
+		String ORGANIZATION = "organization";
 
 		/**
-		 * The Anthropic API key for authentication.
+		 * The OpenAI API key for authentication.
 		 */
 		@Name(API_KEY)
 		@Encrypted
 		String getApiKey();
 
 		/**
-		 * The base URL for the Anthropic API.
+		 * The base URL for the OpenAI API.
 		 *
 		 * <p>
-		 * Default: https://api.anthropic.com/v1
+		 * Default: https://api.openai.com/v1
+		 * </p>
+		 * <p>
+		 * You can override this to use a different endpoint, such as an Azure OpenAI deployment
+		 * or a local proxy server.
 		 * </p>
 		 */
 		@Name(BASE_URL)
-		@StringDefault("https://api.anthropic.com/v1")
+		@StringDefault("https://api.openai.com/v1")
 		String getBaseUrl();
 
 		/**
-		 * The API version to use.
+		 * The OpenAI organization ID.
 		 *
 		 * <p>
-		 * Optional. Anthropic uses versioned APIs. If not specified, the LangChain4j default is used.
+		 * Optional. For users who belong to multiple organizations, you can specify which
+		 * organization is used for an API request.
 		 * </p>
 		 */
-		@Name(VERSION)
+		@Name(ORGANIZATION)
 		@Nullable
-		String getVersion();
+		String getOrganization();
 	}
 
 	/**
-	 * Creates a new {@link AnthropicChatModelFactory} from configuration.
+	 * Creates a new {@link OpenAIChatModelFactory} from configuration.
 	 *
 	 * @param context
 	 *        The instantiation context for error reporting.
 	 * @param config
 	 *        The factory configuration.
 	 */
-	public AnthropicChatModelFactory(InstantiationContext context, Config config) {
+	public OpenAIChatModelFactory(InstantiationContext context, Config config) {
 		super(context, config);
 	}
 
@@ -107,16 +113,16 @@ public class AnthropicChatModelFactory extends ChatModelFactory {
 	protected ChatModel createModel(String modelName) throws Exception {
 		Config config = getConfig();
 
-		// Create LangChain4j Anthropic chat model
-		AnthropicChatModel.AnthropicChatModelBuilder builder = AnthropicChatModel.builder()
+		// Create LangChain4j OpenAI chat model
+		OpenAiChatModel.OpenAiChatModelBuilder builder = OpenAiChatModel.builder()
 			.apiKey(config.getApiKey())
 			.baseUrl(config.getBaseUrl())
 			.modelName(modelName);
 
-		// Add optional version if configured
-		String version = config.getVersion();
-		if (version != null) {
-			builder.version(version);
+		// Add optional organization if configured
+		String organization = config.getOrganization();
+		if (organization != null) {
+			builder.organizationId(organization);
 		}
 
 		return builder.build();
@@ -124,7 +130,7 @@ public class AnthropicChatModelFactory extends ChatModelFactory {
 
 	@Override
 	protected List<String> getAvailableModels() throws Exception {
-		// Model listing not available for Anthropic.
+		// Model listing not available for OpenAI.
 		return Collections.emptyList();
 	}
 }

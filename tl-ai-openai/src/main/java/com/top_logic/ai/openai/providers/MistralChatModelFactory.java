@@ -1,11 +1,12 @@
 /*
  * Copyright (c) 2025 My Company. All Rights Reserved
  */
-package com.top_logic.ai.openai;
+package com.top_logic.ai.openai.providers;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.top_logic.ai.openai.ChatModelFactory;
 import com.top_logic.basic.config.InstantiationContext;
 import com.top_logic.basic.config.annotation.Encrypted;
 import com.top_logic.basic.config.annotation.Name;

@@ -8,6 +8,9 @@ import java.util.List;
 import org.apache.commons.pool.ObjectPool;
 import org.apache.commons.pool.impl.GenericObjectPool;
 
+import com.top_logic.ai.openai.providers.AnthropicChatModelFactory;
+import com.top_logic.ai.openai.providers.MistralChatModelFactory;
+import com.top_logic.ai.openai.providers.OpenAIChatModelFactory;
 import com.top_logic.basic.config.CommaSeparatedStrings;
 import com.top_logic.basic.config.ConfiguredInstance;
 import com.top_logic.basic.config.InstantiationContext;
