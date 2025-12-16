@@ -39,16 +39,16 @@ import dev.langchain4j.model.chat.response.ChatResponse;
  * TL-Script functions for interacting with OpenAI API.
  *
  * <p>
- * This class provides functional-style access to OpenAI chat completions from TL-Script.
- * All functions automatically manage client pooling and thread context binding.
+ * This class provides functional-style access to OpenAI chat completions from TL-Script. All
+ * functions automatically manage client pooling and thread context binding.
  * </p>
  *
  * <p>
  * Example usage in TL-Script:
  * </p>
+ * 
  * <pre>
- * openai:chat("gpt-4", "What is TopLogic?")
- * openai:chatWithSystem("gpt-4", "You are a helpful assistant.", "Explain MCP protocol.")
+ * aiChat("What is TopLogic?")
  * </pre>
  */
 @ScriptPrefix("ai")
@@ -71,7 +71,8 @@ public class OpenAIScriptFunctions extends TLScriptFunctions {
 	 *        <li>Binary data: Treated as user image/document message</li>
 	 *        </ul>
 	 * @param model
-	 *        The model to use (e.g., "gpt-4o", "gpt-4-vision-preview").
+	 *        Optional model name. Currently ignored - the model configured in {@link OpenAIService}
+	 *        is always used. Pass {@code null} to use the default.
 	 * @return The assistant's response text.
 	 */
 	public static String chat(List<Object> messages, String model) {

@@ -32,6 +32,8 @@
 				api-key="%OPENAI_API_KEY%"
 				base-url="https://api.openai.com/v1"
 				model-name="gpt-4o"
+				max-pool-size="10"
+				max-idle-models="5"
 			/>
 		</config>
 	</services>
