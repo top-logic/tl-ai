@@ -89,7 +89,7 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 		@DefaultContainer
 		@Key(ChatModelFactory.Config.MODEL_NAME)
 		@EntryTag("factory")
-		List<ChatModelFactory.Config> getFactories();
+		List<ChatModelFactory.Config<?>> getFactories();
 
 		/**
 		 * The default model name to use when no model is explicitly specified.
@@ -143,7 +143,7 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 			Config<?> config = getConfig();
 
 			// Validate that at least one factory is configured
-			List<ChatModelFactory.Config> factoryConfigs = config.getFactories();
+			List<ChatModelFactory.Config<?>> factoryConfigs = config.getFactories();
 			if (factoryConfigs == null || factoryConfigs.isEmpty()) {
 				throw new RuntimeException(
 					"At least one model factory must be configured. Please add factories to the '" +
@@ -152,7 +152,7 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 
 			// Create a pool for each configured factory
 			InstantiationContext context = new DefaultInstantiationContext(OpenAIService.class);
-			for (ChatModelFactory.Config factoryConfig : factoryConfigs) {
+			for (ChatModelFactory.Config<?> factoryConfig : factoryConfigs) {
 				String modelName = factoryConfig.getModelName();
 				if (modelName == null || modelName.trim().isEmpty()) {
 					throw new RuntimeException("Model name must be configured for each factory.");

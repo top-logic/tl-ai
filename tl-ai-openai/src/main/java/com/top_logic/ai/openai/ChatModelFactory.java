@@ -8,31 +8,36 @@ import org.apache.commons.pool.BasePoolableObjectFactory;
 import com.top_logic.basic.config.ConfiguredInstance;
 import com.top_logic.basic.config.InstantiationContext;
 import com.top_logic.basic.config.PolymorphicConfiguration;
-import com.top_logic.basic.config.annotation.Encrypted;
 import com.top_logic.basic.config.annotation.Name;
-import com.top_logic.basic.config.annotation.Nullable;
 import com.top_logic.basic.config.annotation.defaults.IntDefault;
-import com.top_logic.basic.config.annotation.defaults.StringDefault;
 
 import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.openai.OpenAiChatModel;
 
 /**
- * Factory for creating and managing pooled {@link ChatModel} instances.
+ * Abstract factory for creating and managing pooled {@link ChatModel} instances.
  *
  * <p>
  * This factory is used by Apache Commons Pool to create, validate, and destroy
  * LangChain4j chat model instances in a thread-safe pool. Each factory is configured
  * for a specific AI provider and model.
  * </p>
+ *
+ * <p>
+ * Concrete implementations exist for different AI providers:
+ * </p>
+ * <ul>
+ * <li>{@link OpenAIChatModelFactory}: For OpenAI models (GPT-4o, GPT-3.5-turbo, etc.)</li>
+ * <li>{@link AnthropicChatModelFactory}: For Anthropic models (Claude, etc.)</li>
+ * <li>{@link MistralChatModelFactory}: For Mistral AI models</li>
+ * </ul>
  */
-public class ChatModelFactory extends BasePoolableObjectFactory<ChatModel>
-		implements ConfiguredInstance<ChatModelFactory.Config> {
+public abstract class ChatModelFactory extends BasePoolableObjectFactory<ChatModel>
+		implements ConfiguredInstance<ChatModelFactory.Config<?>> {
 
 	/**
 	 * Configuration interface for {@link ChatModelFactory}.
 	 */
-	public interface Config extends PolymorphicConfiguration<ChatModelFactory> {
+	public interface Config<I extends ChatModelFactory> extends PolymorphicConfiguration<I> {
 
 		/**
 		 * Configuration property name for model name.
@@ -40,27 +45,6 @@ public class ChatModelFactory extends BasePoolableObjectFactory<ChatModel>
 		 * @see #getModelName()
 		 */
 		String MODEL_NAME = "model-name";
-
-		/**
-		 * Configuration property name for API key.
-		 *
-		 * @see #getApiKey()
-		 */
-		String API_KEY = "api-key";
-
-		/**
-		 * Configuration property name for base URL.
-		 *
-		 * @see #getBaseUrl()
-		 */
-		String BASE_URL = "base-url";
-
-		/**
-		 * Configuration property name for organization.
-		 *
-		 * @see #getOrganization()
-		 */
-		String ORGANIZATION = "organization";
 
 		/**
 		 * Configuration property name for maximum pool size.
@@ -77,39 +61,15 @@ public class ChatModelFactory extends BasePoolableObjectFactory<ChatModel>
 		String MAX_IDLE_MODELS = "max-idle-models";
 
 		/**
-		 * The model name (e.g., "gpt-4o", "gpt-3.5-turbo").
+		 * The model name (e.g., "gpt-4o", "claude-3-opus", "mistral-large").
+		 *
+		 * <p>
+		 * This serves as the unique identifier for this factory and determines which
+		 * model is used when calling {@link OpenAIService#getChatModel(String)}.
+		 * </p>
 		 */
 		@Name(MODEL_NAME)
 		String getModelName();
-
-		/**
-		 * The OpenAI API key for authentication.
-		 */
-		@Name(API_KEY)
-		@Encrypted
-		String getApiKey();
-
-		/**
-		 * The base URL for the OpenAI API.
-		 *
-		 * <p>
-		 * Default: https://api.openai.com/v1
-		 * </p>
-		 */
-		@Name(BASE_URL)
-		@StringDefault("https://api.openai.com/v1")
-		String getBaseUrl();
-
-		/**
-		 * The OpenAI organization ID.
-		 *
-		 * <p>
-		 * Optional. For users who belong to multiple organizations.
-		 * </p>
-		 */
-		@Name(ORGANIZATION)
-		@Nullable
-		String getOrganization();
 
 		/**
 		 * The maximum number of chat models in the pool.
@@ -134,7 +94,7 @@ public class ChatModelFactory extends BasePoolableObjectFactory<ChatModel>
 		int getMaxIdleModels();
 	}
 
-	private final Config _config;
+	private final Config<?> _config;
 
 	/**
 	 * Creates a new {@link ChatModelFactory} from configuration.
@@ -144,30 +104,13 @@ public class ChatModelFactory extends BasePoolableObjectFactory<ChatModel>
 	 * @param config
 	 *        The factory configuration.
 	 */
-	public ChatModelFactory(InstantiationContext context, Config config) {
+	protected ChatModelFactory(InstantiationContext context, Config<?> config) {
 		_config = config;
 	}
 
 	@Override
-	public Config getConfig() {
+	public Config<?> getConfig() {
 		return _config;
-	}
-
-	@Override
-	public ChatModel makeObject() throws Exception {
-		// Create LangChain4j OpenAI chat model
-		OpenAiChatModel.OpenAiChatModelBuilder builder = OpenAiChatModel.builder()
-			.apiKey(_config.getApiKey())
-			.baseUrl(_config.getBaseUrl())
-			.modelName(_config.getModelName());
-
-		// Add optional organization if configured
-		String organization = _config.getOrganization();
-		if (organization != null) {
-			builder.organizationId(organization);
-		}
-
-		return builder.build();
 	}
 
 	@Override
