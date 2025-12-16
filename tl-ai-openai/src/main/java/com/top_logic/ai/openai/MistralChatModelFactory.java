@@ -77,6 +77,11 @@ public class MistralChatModelFactory extends ChatModelFactory {
 	}
 
 	@Override
+	public boolean hasValidConfiguration() {
+		return isValidApiKey(getConfig().getApiKey());
+	}
+
+	@Override
 	public ChatModel makeObject() throws Exception {
 		Config config = getConfig();
 

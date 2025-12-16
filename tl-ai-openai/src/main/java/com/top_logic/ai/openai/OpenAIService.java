@@ -150,7 +150,7 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 						Config.FACTORIES + "' property in the service configuration.");
 			}
 
-			// Create a pool for each configured factory
+			// Create a pool for each configured factory that has valid configuration
 			InstantiationContext context = new DefaultInstantiationContext(OpenAIService.class);
 			for (ChatModelFactory.Config<?> factoryConfig : factoryConfigs) {
 				String modelName = factoryConfig.getModelName();
@@ -160,6 +160,11 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 
 				// Create the factory
 				ChatModelFactory factory = context.getInstance(factoryConfig);
+
+				// Skip factories without valid configuration (e.g., missing API keys)
+				if (!factory.hasValidConfiguration()) {
+					continue;
+				}
 
 				// Create and configure the pool
 				GenericObjectPool<ChatModel> pool = new GenericObjectPool<>(factory);
@@ -171,11 +176,17 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 				_modelPools.put(modelName, pool);
 			}
 
+			// Ensure at least one factory was successfully configured
+			if (_modelPools.isEmpty()) {
+				throw new RuntimeException(
+					"No valid model factories available. Please check that API keys are properly configured.");
+			}
+
 			// Set default model
 			_defaultModel = config.getDefaultModel();
-			if (_defaultModel == null) {
-				// Use first factory's model as default
-				_defaultModel = factoryConfigs.get(0).getModelName();
+			if (_defaultModel == null || !_modelPools.containsKey(_defaultModel)) {
+				// Use first available model as default
+				_defaultModel = _modelPools.keySet().iterator().next();
 			}
 
 			context.checkErrors();

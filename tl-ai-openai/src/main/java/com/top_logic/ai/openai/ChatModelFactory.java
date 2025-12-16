@@ -113,6 +113,37 @@ public abstract class ChatModelFactory extends BasePoolableObjectFactory<ChatMod
 		return _config;
 	}
 
+	/**
+	 * Checks if this factory has a valid configuration.
+	 *
+	 * <p>
+	 * This method is used during service startup to filter out factories that cannot be used
+	 * because required configuration (like API keys) is missing or invalid.
+	 * </p>
+	 *
+	 * @return {@code true} if the factory is properly configured and can create models,
+	 *         {@code false} otherwise.
+	 */
+	public abstract boolean hasValidConfiguration();
+
+	/**
+	 * Checks if an API key is valid (not null, not empty, not a placeholder).
+	 *
+	 * @param apiKey
+	 *        The API key to check.
+	 * @return {@code true} if the API key is valid, {@code false} otherwise.
+	 */
+	protected static boolean isValidApiKey(String apiKey) {
+		if (apiKey == null || apiKey.trim().isEmpty()) {
+			return false;
+		}
+		// Check if it's a placeholder like %OPENAI_API_KEY%
+		if (apiKey.startsWith("%") && apiKey.endsWith("%")) {
+			return false;
+		}
+		return true;
+	}
+
 	@Override
 	public void destroyObject(ChatModel model) throws Exception {
 		// ChatModel doesn't have an explicit close method in LangChain4j
