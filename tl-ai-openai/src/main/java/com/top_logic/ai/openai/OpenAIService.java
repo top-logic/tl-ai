@@ -3,6 +3,10 @@
  */
 package com.top_logic.ai.openai;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.pool.ObjectPool;
 import org.apache.commons.pool.impl.GenericObjectPool;
 
@@ -10,12 +14,13 @@ import com.top_logic.basic.CalledByReflection;
 import com.top_logic.basic.InteractionContext;
 import com.top_logic.basic.col.TypedAnnotatable;
 import com.top_logic.basic.col.TypedAnnotatable.Property;
+import com.top_logic.basic.config.DefaultInstantiationContext;
 import com.top_logic.basic.config.InstantiationContext;
-import com.top_logic.basic.config.annotation.Encrypted;
+import com.top_logic.basic.config.annotation.DefaultContainer;
+import com.top_logic.basic.config.annotation.EntryTag;
+import com.top_logic.basic.config.annotation.Key;
 import com.top_logic.basic.config.annotation.Name;
 import com.top_logic.basic.config.annotation.Nullable;
-import com.top_logic.basic.config.annotation.defaults.IntDefault;
-import com.top_logic.basic.config.annotation.defaults.StringDefault;
 import com.top_logic.basic.config.order.DisplayInherited;
 import com.top_logic.basic.config.order.DisplayInherited.DisplayStrategy;
 import com.top_logic.basic.config.order.DisplayOrder;
@@ -27,171 +32,83 @@ import com.top_logic.basic.thread.UnboundListener;
 import dev.langchain4j.model.chat.ChatModel;
 
 /**
- * TopLogic service that provides access to OpenAI API functionality via LangChain4j with thread-safe client pooling.
+ * TopLogic service that provides access to AI models via LangChain4j with thread-safe client pooling.
  *
  * <p>
- * This service manages a pool of {@link ChatModel} instances to support concurrent access from
- * multiple sessions. Models are automatically bound to the current {@link InteractionContext} and
- * returned to the pool when the context is destroyed.
+ * This service manages multiple {@link ChatModelFactory} instances, each configured for a specific
+ * AI model. Models are pooled and automatically bound to the current {@link InteractionContext},
+ * then returned to the pool when the context is destroyed.
  * </p>
  *
  * <p>
  * The service provides a singleton instance that can be accessed via {@link #getInstance()} and
- * returns a {@link ChatModel} bound to the current thread context via {@link #getChatModel()}.
+ * returns a {@link ChatModel} bound to the current thread context via {@link #getChatModel(String)}.
  * </p>
  */
 public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?>> {
 
 	/**
-	 * ThreadContext property key for storing the borrowed chat model.
+	 * ThreadContext property key for storing the borrowed chat models by model name.
 	 */
-	private static final Property<ChatModel> CONTEXT_MODEL_KEY =
-		TypedAnnotatable.property(ChatModel.class, OpenAIService.class.getName() + ".model");
+	private static final Property<Map<String, ChatModel>> CONTEXT_MODELS_KEY =
+		TypedAnnotatable.propertyMap(OpenAIService.class.getName() + ".models");
 
 	/**
 	 * Configuration interface for {@link OpenAIService}.
 	 */
 	@DisplayOrder({
-		Config.API_KEY,
-		Config.BASE_URL,
-		Config.ORGANIZATION,
-		Config.MODEL_NAME,
-		Config.MAX_POOL_SIZE,
-		Config.MAX_IDLE_MODELS,
+		Config.FACTORIES,
+		Config.DEFAULT_MODEL,
 	})
 	@DisplayInherited(DisplayStrategy.PREPEND)
 	public interface Config<I extends OpenAIService> extends ConfiguredManagedClass.Config<I> {
 
 		/**
-		 * Configuration property name for API key.
+		 * Configuration property name for model factories.
 		 *
-		 * @see #getApiKey()
+		 * @see #getFactories()
 		 */
-		String API_KEY = "api-key";
+		String FACTORIES = "factories";
 
 		/**
-		 * Configuration property name for base URL.
+		 * Configuration property name for default model.
 		 *
-		 * @see #getBaseUrl()
+		 * @see #getDefaultModel()
 		 */
-		String BASE_URL = "base-url";
+		String DEFAULT_MODEL = "default-model";
 
 		/**
-		 * Configuration property name for organization.
-		 *
-		 * @see #getOrganization()
-		 */
-		String ORGANIZATION = "organization";
-
-		/**
-		 * Configuration property name for default model name.
-		 *
-		 * @see #getModelName()
-		 */
-		String MODEL_NAME = "model-name";
-
-		/**
-		 * Configuration property name for maximum pool size.
-		 *
-		 * @see #getMaxPoolSize()
-		 */
-		String MAX_POOL_SIZE = "max-pool-size";
-
-		/**
-		 * Configuration property name for maximum idle models.
-		 *
-		 * @see #getMaxIdleModels()
-		 */
-		String MAX_IDLE_MODELS = "max-idle-models";
-
-		/**
-		 * The OpenAI API key for authentication.
+		 * The configured model factories.
 		 *
 		 * <p>
-		 * This key is required to make requests to the OpenAI API. You can obtain an API key
-		 * from the OpenAI platform at https://platform.openai.com/api-keys
+		 * Each factory is identified by the model name it produces and manages a pool
+		 * of chat model instances for that specific model.
 		 * </p>
 		 */
-		@Name(API_KEY)
-		@Encrypted
-		String getApiKey();
+		@Name(FACTORIES)
+		@DefaultContainer
+		@Key(ChatModelFactory.Config.MODEL_NAME)
+		@EntryTag("factory")
+		List<ChatModelFactory.Config> getFactories();
 
 		/**
-		 * The base URL for the OpenAI API.
+		 * The default model name to use when no model is explicitly specified.
 		 *
 		 * <p>
-		 * Default: https://api.openai.com/v1
-		 * </p>
-		 * <p>
-		 * You can override this to use a different endpoint, such as an Azure OpenAI deployment
-		 * or a local proxy server.
+		 * This should match one of the model names configured in {@link #getFactories()}.
+		 * If not specified or null, the first factory's model will be used as default.
 		 * </p>
 		 */
-		@Name(BASE_URL)
-		@StringDefault("https://api.openai.com/v1")
-		String getBaseUrl();
-
-		/**
-		 * The OpenAI organization ID.
-		 *
-		 * <p>
-		 * Optional. For users who belong to multiple organizations, you can specify which
-		 * organization is used for an API request. Usage from these API requests will count
-		 * against the specified organization's quota.
-		 * </p>
-		 */
-		@Name(ORGANIZATION)
+		@Name(DEFAULT_MODEL)
 		@Nullable
-		String getOrganization();
-
-		/**
-		 * The default model name to use.
-		 *
-		 * <p>
-		 * Default: gpt-4o
-		 * </p>
-		 * <p>
-		 * This is the default model used when no model is explicitly specified.
-		 * Common values: gpt-4o, gpt-4-turbo, gpt-3.5-turbo
-		 * </p>
-		 */
-		@Name(MODEL_NAME)
-		@StringDefault("gpt-4o")
-		String getModelName();
-
-		/**
-		 * The maximum number of chat models in the pool.
-		 *
-		 * <p>
-		 * Default: 10
-		 * </p>
-		 * <p>
-		 * This limits the total number of chat model instances that can be created.
-		 * If all models are in use, additional requests will wait for a model to become available.
-		 * </p>
-		 */
-		@Name(MAX_POOL_SIZE)
-		@IntDefault(10)
-		int getMaxPoolSize();
-
-		/**
-		 * The maximum number of idle chat models kept in the pool.
-		 *
-		 * <p>
-		 * Default: 5
-		 * </p>
-		 * <p>
-		 * Idle models exceeding this number will be destroyed to free resources.
-		 * </p>
-		 */
-		@Name(MAX_IDLE_MODELS)
-		@IntDefault(5)
-		int getMaxIdleModels();
+		String getDefaultModel();
 	}
 
 	private static volatile OpenAIService _instance;
 
-	private ObjectPool<ChatModel> _modelPool;
+	private Map<String, ObjectPool<ChatModel>> _modelPools = new HashMap<>();
+
+	private String _defaultModel;
 
 	/**
 	 * Creates a new {@link OpenAIService} from configuration.
@@ -225,29 +142,43 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 
 			Config<?> config = getConfig();
 
-			// Validate API key is configured
-			String apiKey = config.getApiKey();
-			if (apiKey == null || apiKey.trim().isEmpty()) {
+			// Validate that at least one factory is configured
+			List<ChatModelFactory.Config> factoryConfigs = config.getFactories();
+			if (factoryConfigs == null || factoryConfigs.isEmpty()) {
 				throw new RuntimeException(
-					"OpenAI API key must be configured. Please set the '" + Config.API_KEY +
-					"' property in the service configuration.");
+					"At least one model factory must be configured. Please add factories to the '" +
+						Config.FACTORIES + "' property in the service configuration.");
 			}
 
-			// Create model factory
-			ChatModelFactory factory = new ChatModelFactory(
-				apiKey,
-				config.getBaseUrl(),
-				config.getOrganization(),
-				config.getModelName());
+			// Create a pool for each configured factory
+			InstantiationContext context = new DefaultInstantiationContext(OpenAIService.class);
+			for (ChatModelFactory.Config factoryConfig : factoryConfigs) {
+				String modelName = factoryConfig.getModelName();
+				if (modelName == null || modelName.trim().isEmpty()) {
+					throw new RuntimeException("Model name must be configured for each factory.");
+				}
 
-			// Create and configure the pool
-			GenericObjectPool<ChatModel> pool = new GenericObjectPool<>(factory);
-			pool.setMaxActive(config.getMaxPoolSize());
-			pool.setMaxIdle(config.getMaxIdleModels());
-			pool.setTestOnBorrow(true);
-			pool.setWhenExhaustedAction(GenericObjectPool.WHEN_EXHAUSTED_BLOCK);
+				// Create the factory
+				ChatModelFactory factory = context.getInstance(factoryConfig);
 
-			_modelPool = pool;
+				// Create and configure the pool
+				GenericObjectPool<ChatModel> pool = new GenericObjectPool<>(factory);
+				pool.setMaxActive(factoryConfig.getMaxPoolSize());
+				pool.setMaxIdle(factoryConfig.getMaxIdleModels());
+				pool.setTestOnBorrow(true);
+				pool.setWhenExhaustedAction(GenericObjectPool.WHEN_EXHAUSTED_BLOCK);
+
+				_modelPools.put(modelName, pool);
+			}
+
+			// Set default model
+			_defaultModel = config.getDefaultModel();
+			if (_defaultModel == null) {
+				// Use first factory's model as default
+				_defaultModel = factoryConfigs.get(0).getModelName();
+			}
+
+			context.checkErrors();
 
 		} catch (RuntimeException ex) {
 			throw ex;
@@ -262,70 +193,118 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 			// Unregister singleton instance
 			_instance = null;
 
-			// Close the model pool
-			if (_modelPool != null) {
+			// Close all model pools
+			for (Map.Entry<String, ObjectPool<ChatModel>> entry : _modelPools.entrySet()) {
 				try {
-					_modelPool.close();
+					entry.getValue().close();
 				} catch (Exception ex) {
 					// Log but don't fail shutdown
-					System.err.println("Error closing chat model pool: " + ex.getMessage());
+					System.err.println("Error closing chat model pool for model '" + entry.getKey() +
+						"': " + ex.getMessage());
 				}
-				_modelPool = null;
 			}
+			_modelPools.clear();
+			_defaultModel = null;
+
 		} finally {
 			super.shutDown();
 		}
 	}
 
 	/**
-	 * Returns a chat model bound to the current {@link InteractionContext}.
-	 *
-	 * <p>
-	 * The model is borrowed from the pool and automatically returned when the current
-	 * {@link InteractionContext} is destroyed. Multiple calls to this method within the same
-	 * interaction context will return the same model instance.
-	 * </p>
+	 * Returns a chat model for the default model name, bound to the current {@link InteractionContext}.
 	 *
 	 * @return The chat model bound to the current interaction context.
 	 * @throws RuntimeException
 	 *         If no model is available or the service is not started.
+	 * @see #getChatModel(String)
 	 */
 	public ChatModel getChatModel() {
+		return getChatModel(null);
+	}
+
+	/**
+	 * Returns a chat model for the specified model name, bound to the current {@link InteractionContext}.
+	 *
+	 * <p>
+	 * The model is borrowed from the pool and automatically returned when the current
+	 * {@link InteractionContext} is destroyed. Multiple calls to this method within the same
+	 * interaction context with the same model name will return the same model instance.
+	 * </p>
+	 *
+	 * @param modelName
+	 *        The name of the model to use, or {@code null} to use the default model.
+	 * @return The chat model bound to the current interaction context.
+	 * @throws RuntimeException
+	 *         If no model is available or the service is not started.
+	 */
+	public ChatModel getChatModel(String modelName) {
 		InteractionContext interaction = ThreadContextManager.getInteraction();
 		if (interaction == null) {
 			throw new RuntimeException(
 				"No InteractionContext available. Chat models must be used within an InteractionContext.");
 		}
 
-		// Check if we already have a model for this interaction context
-		ChatModel model = interaction.get(CONTEXT_MODEL_KEY);
+		// Use default model if none specified
+		String effectiveModelName = modelName != null ? modelName : _defaultModel;
+
+		// Get or create the models map for this interaction
+		Map<String, ChatModel> contextModels = interaction.mkMap(CONTEXT_MODELS_KEY);
+		if (contextModels == null) {
+			contextModels = new HashMap<>();
+			interaction.set(CONTEXT_MODELS_KEY, contextModels);
+
+			// Register cleanup callback to return all models to their pools when context is
+			// destroyed
+			// Note: We only register one listener that returns all models
+			interaction.addUnboundListener(new UnboundListener() {
+				@Override
+				public void threadUnbound(InteractionContext context) throws Throwable {
+					Map<String, ChatModel> models = context.get(CONTEXT_MODELS_KEY);
+					if (models != null) {
+						for (Map.Entry<String, ChatModel> entry : models.entrySet()) {
+							ObjectPool<ChatModel> modelPool = _modelPools.get(entry.getKey());
+							if (modelPool != null) {
+								try {
+									modelPool.returnObject(entry.getValue());
+								} catch (Exception ex) {
+									// Log but don't fail cleanup
+									System.err.println("Error returning chat model to pool for model '" +
+										entry.getKey() + "': " + ex.getMessage());
+								}
+							}
+						}
+						models.clear();
+					}
+				}
+			});
+		}
+
+		// Check if we already have this model for this interaction context
+		ChatModel model = contextModels.get(effectiveModelName);
 		if (model != null) {
 			return model;
+		}
+
+		// Get the pool for this model
+		ObjectPool<ChatModel> pool = _modelPools.get(effectiveModelName);
+		if (pool == null) {
+			throw new RuntimeException(
+				"No model factory configured for model: " + effectiveModelName +
+					". Available models: " + _modelPools.keySet());
 		}
 
 		// Borrow a new model from the pool
 		final ChatModel newModel;
 		try {
-			newModel = _modelPool.borrowObject();
+			newModel = pool.borrowObject();
 		} catch (Exception ex) {
-			throw new RuntimeException("Failed to borrow chat model from pool: " + ex.getMessage(), ex);
+			throw new RuntimeException("Failed to borrow chat model from pool for model '" +
+				effectiveModelName + "': " + ex.getMessage(), ex);
 		}
 
 		// Store in interaction context
-		interaction.set(CONTEXT_MODEL_KEY, newModel);
-
-		// Register cleanup callback to return model to pool when context is destroyed
-		interaction.addUnboundListener(new UnboundListener() {
-			@Override
-			public void threadUnbound(InteractionContext context) throws Throwable {
-				try {
-					_modelPool.returnObject(newModel);
-				} catch (Exception ex) {
-					// Log but don't fail cleanup
-					System.err.println("Error returning chat model to pool: " + ex.getMessage());
-				}
-			}
-		});
+		contextModels.put(effectiveModelName, newModel);
 
 		return newModel;
 	}

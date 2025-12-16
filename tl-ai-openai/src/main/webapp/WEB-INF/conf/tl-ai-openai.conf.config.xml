@@ -29,12 +29,29 @@
 
 		<config service-class="com.top_logic.ai.openai.OpenAIService">
 			<instance class="com.top_logic.ai.openai.OpenAIService"
-				api-key="%OPENAI_API_KEY%"
-				base-url="https://api.openai.com/v1"
-				model-name="gpt-4o"
-				max-pool-size="10"
-				max-idle-models="5"
-			/>
+				default-model="gpt-4o"
+			>
+				<factories>
+					<!-- GPT-4o model factory -->
+					<factory
+						class="com.top_logic.ai.openai.ChatModelFactory"
+						model-name="gpt-4o"
+						api-key="%OPENAI_API_KEY%"
+						base-url="https://api.openai.com/v1"
+						max-pool-size="10"
+						max-idle-models="5"
+					/>
+					<!-- GPT-3.5-turbo model factory (example of multiple models) -->
+					<factory
+						class="com.top_logic.ai.openai.ChatModelFactory"
+						model-name="gpt-3.5-turbo"
+						api-key="%OPENAI_API_KEY%"
+						base-url="https://api.openai.com/v1"
+						max-pool-size="10"
+						max-idle-models="5"
+					/>
+				</factories>
+			</instance>
 		</config>
 	</services>
 

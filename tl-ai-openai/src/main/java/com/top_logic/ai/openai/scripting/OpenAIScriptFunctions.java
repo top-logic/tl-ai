@@ -71,12 +71,12 @@ public class OpenAIScriptFunctions extends TLScriptFunctions {
 	 *        <li>Binary data: Treated as user image/document message</li>
 	 *        </ul>
 	 * @param model
-	 *        Optional model name. Currently ignored - the model configured in {@link OpenAIService}
-	 *        is always used. Pass {@code null} to use the default.
+	 *        The model name to use (e.g., "gpt-4o", "gpt-3.5-turbo"), or {@code null} to use
+	 *        the default model configured in {@link OpenAIService}.
 	 * @return The assistant's response text.
 	 */
 	public static String chat(List<Object> messages, String model) {
-		ChatModel chatModel = OpenAIService.getInstance().getChatModel();
+		ChatModel chatModel = OpenAIService.getInstance().getChatModel(model);
 
 		List<ChatMessage> chatMessages = new ArrayList<>();
 
