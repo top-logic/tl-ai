@@ -9,18 +9,29 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.activation.MimeType;
+import jakarta.activation.MimeTypeParseException;
+
 import com.top_logic.ai.openai.OpenAIService;
+import com.top_logic.basic.StringServices;
 import com.top_logic.basic.io.StreamUtilities;
 import com.top_logic.basic.io.binary.BinaryDataSource;
 import com.top_logic.model.search.expr.config.operations.ScriptPrefix;
 import com.top_logic.model.search.expr.config.operations.TLScriptFunctions;
 
+import dev.langchain4j.data.audio.Audio;
+import dev.langchain4j.data.image.Image;
 import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.AudioContent;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ImageContent;
+import dev.langchain4j.data.message.PdfFileContent;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.data.message.VideoContent;
+import dev.langchain4j.data.pdf.PdfFile;
+import dev.langchain4j.data.video.Video;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 
@@ -106,15 +117,13 @@ public class OpenAIScriptFunctions extends TLScriptFunctions {
 		if (content instanceof String text) {
 			return new UserMessage(text);
 		} else if (content instanceof BinaryDataSource binary) {
-			return UserMessage.from(createImageContent(binary));
+			return UserMessage.from(createContent(binary));
 		} else if (content instanceof List<?> list) {
-			// Mixed content: text and images
+			// Mixed content: text and binary data
 			List<dev.langchain4j.data.message.Content> contents = new ArrayList<>();
 			for (Object item : list) {
-				if (item instanceof String text) {
-					contents.add(new TextContent(text));
-				} else if (item instanceof BinaryDataSource binary) {
-					contents.add(createImageContent(binary));
+				if (item instanceof BinaryDataSource binary) {
+					contents.add(createContent(binary));
 				} else {
 					contents.add(new TextContent(toString(item)));
 				}
@@ -126,24 +135,103 @@ public class OpenAIScriptFunctions extends TLScriptFunctions {
 	}
 
 	/**
-	 * Creates an image content from a {@link BinaryDataSource}.
+	 * Creates appropriate content from a {@link BinaryDataSource} based on its content type.
+	 *
+	 * <p>
+	 * Supports:
+	 * </p>
+	 * <ul>
+	 * <li>Images (image/*): Creates {@link ImageContent}</li>
+	 * <li>Audio (audio/*): Creates {@link AudioContent}</li>
+	 * <li>Video (video/*): Creates {@link VideoContent}</li>
+	 * <li>PDF (application/pdf): Creates {@link PdfFileContent}</li>
+	 * <li>Text (text/*): Creates {@link TextContent} by decoding the binary data as UTF-8</li>
+	 * </ul>
 	 *
 	 * @param binary
-	 *        The binary data (image or document).
-	 * @return The image content.
+	 *        The binary data source.
+	 * @return The appropriate content type based on the MIME type.
+	 * @throws RuntimeException
+	 *         If the content type is not supported or reading fails.
 	 */
-	private static ImageContent createImageContent(BinaryDataSource binary) {
+	private static dev.langchain4j.data.message.Content createContent(BinaryDataSource binary) {
 		try {
-			// Read binary data and encode as base64
+			String contentType = binary.getContentType();
+			if (contentType == null || contentType.isEmpty()) {
+				throw new IllegalArgumentException("Content type is required for binary data");
+			}
+
 			byte[] bytes = StreamUtilities.readStreamContents(binary);
+
+			// Handle text content types by decoding with the specified charset
+			if (contentType.startsWith("text/")) {
+				String charset = extractCharset(contentType);
+				String text = new String(bytes, charset);
+				return new TextContent(text);
+			}
+
+			// For non-text content, encode as base64
 			String base64 = Base64.getEncoder().encodeToString(bytes);
 
-			String contentType = binary.getContentType();
-			String dataUrl = "data:" + contentType + ";base64," + base64;
-
-			return new ImageContent(dataUrl);
+			// Determine content type from MIME type
+			if (contentType.startsWith("image/")) {
+				// Create image content
+				Image image = Image.builder()
+					.base64Data(base64)
+					.mimeType(contentType)
+					.build();
+				return new ImageContent(image);
+			} else if (contentType.startsWith("audio/")) {
+				// Create audio content
+				Audio audio = Audio.builder()
+					.base64Data(base64)
+					.mimeType(contentType)
+					.build();
+				return new AudioContent(audio);
+			} else if (contentType.startsWith("video/")) {
+				// Create video content
+				Video video = Video.builder()
+					.base64Data(base64)
+					.mimeType(contentType)
+					.build();
+				return new VideoContent(video);
+			} else if ("application/pdf".equals(contentType)) {
+				// Create PDF content
+				PdfFile pdfFile = PdfFile.builder()
+					.base64Data(base64)
+					.mimeType(contentType)
+					.build();
+				return new PdfFileContent(pdfFile);
+			} else {
+				throw new IllegalArgumentException(
+					"Unsupported content type: " + contentType +
+						". Supported types: image/*, audio/*, video/*, text/*, application/pdf");
+			}
 		} catch (IOException ex) {
 			throw new RuntimeException("Failed to read binary data: " + ex.getMessage(), ex);
+		}
+	}
+
+	/**
+	 * Extracts the charset from a MIME type string.
+	 *
+	 * <p>
+	 * Parses the charset parameter from MIME types like "text/plain; charset=ISO-8859-1".
+	 * If no charset is specified, defaults to UTF-8.
+	 * </p>
+	 *
+	 * @param contentType
+	 *        The MIME type string (e.g., "text/plain; charset=UTF-8").
+	 * @return The charset name, defaults to "UTF-8" if not specified.
+	 */
+	private static String extractCharset(String contentType) {
+		try {
+			MimeType mimeType = new MimeType(contentType);
+			String charset = mimeType.getParameter("charset");
+			return charset != null ? charset : StringServices.UTF8;
+		} catch (MimeTypeParseException ex) {
+			// If parsing fails, fall back to UTF-8
+			return StringServices.UTF8;
 		}
 	}
 
