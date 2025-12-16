@@ -90,6 +90,15 @@ Configure AI response structure:
    - Nested objects
    - Array item types
 
+## Maven Coordinates
+
+```xml
+<dependency>
+  <groupId>com.top-logic</groupId>
+  <artifactId>tl-ai-service</artifactId>
+</dependency>
+```
+
 ## Architecture
 
 ### Core Components
@@ -142,16 +151,6 @@ export tl_mistral_apikey="..."
 ```
 
 Or pass corresponding system properties to the application.
-
-## Maven Coordinates
-
-```xml
-<dependency>
-  <groupId>com.top-logic</groupId>
-  <artifactId>tl-ai-service</artifactId>
-  <version>1.0-SNAPSHOT</version>
-</dependency>
-```
 
 ## Adding a New Provider
 
