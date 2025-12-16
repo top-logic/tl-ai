@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.pool.ObjectPool;
-import org.apache.commons.pool.impl.GenericObjectPool;
 
 import com.top_logic.basic.CalledByReflection;
 import com.top_logic.basic.InteractionContext;
