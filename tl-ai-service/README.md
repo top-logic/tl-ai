@@ -58,7 +58,7 @@ aiChat($messages, "gpt-4o", {
 })
 
 // Multimodal input (images, documents)
-aiChat([#{
+aiChat([{
   "role": "user",
   "content": [
     "What's in this image?",
@@ -142,59 +142,6 @@ export tl_mistral_apikey="..."
 ```
 
 Or pass corresponding system properties to the application.
-
-## Usage Examples
-
-### Java Integration
-
-```java
-// Get the service
-OpenAIService service = OpenAIService.getInstance();
-
-// Get a chat model (uses default if null)
-ChatModel model = service.getChatModel(null);
-
-// Create messages
-List<ChatMessage> messages = List.of(
-    new UserMessage("What is TopLogic?")
-);
-
-// Send request
-ChatResponse response = model.chat(messages);
-String answer = response.aiMessage().text();
-```
-
-### TL-Script Integration
-
-```javascript
-// Simple question
-$answer = aiChat([#{ "role": "user", "content": "Hello!" }], null, null);
-
-// With system prompt
-$messages = list(
-  #{ "role": "system", "content": "You are a TopLogic expert." },
-  #{ "role": "user", "content": "Explain model-driven development" }
-);
-$answer = aiChat($messages, "gpt-4o", null);
-
-// Extract structured data
-$schema = #{
-  "type": "json",
-  "jsonSchema": #{
-    "name": "ContactInfo",
-    "schema": #{
-      "properties": #{
-        "firstName": #{"type": "string"},
-        "lastName": #{"type": "string"},
-        "email": #{"type": "string"},
-        "age": #{"type": "integer"}
-      },
-      "required": ["firstName", "lastName", "email"]
-    }
-  }
-};
-$jsonResult = aiChat($extractionMessages, "gpt-4o", $schema);
-```
 
 ## Maven Coordinates
 
