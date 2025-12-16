@@ -18,7 +18,6 @@ import com.top_logic.basic.config.DefaultInstantiationContext;
 import com.top_logic.basic.config.InstantiationContext;
 import com.top_logic.basic.config.annotation.DefaultContainer;
 import com.top_logic.basic.config.annotation.EntryTag;
-import com.top_logic.basic.config.annotation.Key;
 import com.top_logic.basic.config.annotation.Name;
 import com.top_logic.basic.config.annotation.Nullable;
 import com.top_logic.basic.config.order.DisplayInherited;
@@ -87,7 +86,6 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 		 */
 		@Name(FACTORIES)
 		@DefaultContainer
-		@Key(ChatModelFactory.Config.MODEL_NAME)
 		@EntryTag("factory")
 		List<ChatModelFactory.Config<?>> getFactories();
 
@@ -150,12 +148,12 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 						Config.FACTORIES + "' property in the service configuration.");
 			}
 
-			// Create a pool for each configured factory that has valid configuration
+			// Create a pool for each model from each configured factory
 			InstantiationContext context = new DefaultInstantiationContext(OpenAIService.class);
 			for (ChatModelFactory.Config<?> factoryConfig : factoryConfigs) {
-				String modelName = factoryConfig.getModelName();
-				if (modelName == null || modelName.trim().isEmpty()) {
-					throw new RuntimeException("Model name must be configured for each factory.");
+				List<String> modelNames = factoryConfig.getModels();
+				if (modelNames.isEmpty()) {
+					throw new RuntimeException("At least one model must be configured for each factory.");
 				}
 
 				// Create the factory
@@ -166,14 +164,16 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 					continue;
 				}
 
-				// Create and configure the pool
-				GenericObjectPool<ChatModel> pool = new GenericObjectPool<>(factory);
-				pool.setMaxActive(factoryConfig.getMaxPoolSize());
-				pool.setMaxIdle(factoryConfig.getMaxIdleModels());
-				pool.setTestOnBorrow(true);
-				pool.setWhenExhaustedAction(GenericObjectPool.WHEN_EXHAUSTED_BLOCK);
+				// Create a pool for each model using this factory
+				for (String modelName : modelNames) {
+					if (modelName == null || modelName.trim().isEmpty()) {
+						throw new RuntimeException("Model name must not be empty.");
+					}
 
-				_modelPools.put(modelName, pool);
+					// Create the pool for this specific model
+					ObjectPool<ChatModel> pool = factory.createPool(modelName);
+					_modelPools.put(modelName, pool);
+				}
 			}
 
 			// Ensure at least one factory was successfully configured

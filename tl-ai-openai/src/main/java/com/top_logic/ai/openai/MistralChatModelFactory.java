@@ -82,14 +82,14 @@ public class MistralChatModelFactory extends ChatModelFactory {
 	}
 
 	@Override
-	public ChatModel makeObject() throws Exception {
+	protected ChatModel createModel(String modelName) throws Exception {
 		Config config = getConfig();
 
 		// Create LangChain4j Mistral AI chat model
 		MistralAiChatModel.MistralAiChatModelBuilder builder = MistralAiChatModel.builder()
 			.apiKey(config.getApiKey())
 			.baseUrl(config.getBaseUrl())
-			.modelName(config.getModelName());
+			.modelName(modelName);
 
 		return builder.build();
 	}

@@ -3,11 +3,16 @@
  */
 package com.top_logic.ai.openai;
 
-import org.apache.commons.pool.BasePoolableObjectFactory;
+import java.util.List;
 
+import org.apache.commons.pool.ObjectPool;
+import org.apache.commons.pool.impl.GenericObjectPool;
+
+import com.top_logic.basic.config.CommaSeparatedStrings;
 import com.top_logic.basic.config.ConfiguredInstance;
 import com.top_logic.basic.config.InstantiationContext;
 import com.top_logic.basic.config.PolymorphicConfiguration;
+import com.top_logic.basic.config.annotation.Format;
 import com.top_logic.basic.config.annotation.Name;
 import com.top_logic.basic.config.annotation.defaults.IntDefault;
 
@@ -17,9 +22,9 @@ import dev.langchain4j.model.chat.ChatModel;
  * Abstract factory for creating and managing pooled {@link ChatModel} instances.
  *
  * <p>
- * This factory is used by Apache Commons Pool to create, validate, and destroy
- * LangChain4j chat model instances in a thread-safe pool. Each factory is configured
- * for a specific AI provider and model.
+ * This factory creates object pools for LangChain4j chat model instances. Each factory is
+ * configured for a specific AI provider and can create pools for multiple models from that
+ * provider.
  * </p>
  *
  * <p>
@@ -31,8 +36,7 @@ import dev.langchain4j.model.chat.ChatModel;
  * <li>{@link MistralChatModelFactory}: For Mistral AI models</li>
  * </ul>
  */
-public abstract class ChatModelFactory extends BasePoolableObjectFactory<ChatModel>
-		implements ConfiguredInstance<ChatModelFactory.Config<?>> {
+public abstract class ChatModelFactory implements ConfiguredInstance<ChatModelFactory.Config<?>> {
 
 	/**
 	 * Configuration interface for {@link ChatModelFactory}.
@@ -40,11 +44,11 @@ public abstract class ChatModelFactory extends BasePoolableObjectFactory<ChatMod
 	public interface Config<I extends ChatModelFactory> extends PolymorphicConfiguration<I> {
 
 		/**
-		 * Configuration property name for model name.
+		 * Configuration property name for models.
 		 *
-		 * @see #getModelName()
+		 * @see #getModels()
 		 */
-		String MODEL_NAME = "model-name";
+		String MODELS = "models";
 
 		/**
 		 * Configuration property name for maximum pool size.
@@ -61,15 +65,18 @@ public abstract class ChatModelFactory extends BasePoolableObjectFactory<ChatMod
 		String MAX_IDLE_MODELS = "max-idle-models";
 
 		/**
-		 * The model name (e.g., "gpt-4o", "claude-3-opus", "mistral-large").
+		 * The model names (e.g., "gpt-4o, gpt-3.5-turbo" or "claude-3-opus, claude-3-sonnet").
 		 *
 		 * <p>
-		 * This serves as the unique identifier for this factory and determines which
-		 * model is used when calling {@link OpenAIService#getChatModel(String)}.
+		 * This is a comma-separated list of model names. Each model name serves as a unique
+		 * identifier and determines which models can be requested via
+		 * {@link OpenAIService#getChatModel(String)}. All listed models will use the same
+		 * API credentials from this factory.
 		 * </p>
 		 */
-		@Name(MODEL_NAME)
-		String getModelName();
+		@Name(MODELS)
+		@Format(CommaSeparatedStrings.class)
+		List<String> getModels();
 
 		/**
 		 * The maximum number of chat models in the pool.
@@ -144,15 +151,57 @@ public abstract class ChatModelFactory extends BasePoolableObjectFactory<ChatMod
 		return true;
 	}
 
-	@Override
-	public void destroyObject(ChatModel model) throws Exception {
-		// ChatModel doesn't have an explicit close method in LangChain4j
-		// The underlying HTTP client will be cleaned up by garbage collection
+	/**
+	 * Creates an object pool for a specific model.
+	 *
+	 * @param modelName
+	 *        The name of the model to create a pool for.
+	 * @return A configured object pool for the specified model.
+	 */
+	public ObjectPool<ChatModel> createPool(String modelName) {
+		Config<?> config = getConfig();
+
+		// Create an anonymous factory for this specific model
+		GenericObjectPool<ChatModel> pool = new GenericObjectPool<>(
+			new org.apache.commons.pool.BasePoolableObjectFactory<ChatModel>() {
+				@Override
+				public ChatModel makeObject() throws Exception {
+					return createModel(modelName);
+				}
+
+				@Override
+				public void destroyObject(ChatModel model) throws Exception {
+					// ChatModel doesn't have an explicit close method in LangChain4j
+					// The underlying HTTP client will be cleaned up by garbage collection
+				}
+
+				@Override
+				public boolean validateObject(ChatModel model) {
+					// Basic validation - ensure model is not null
+					return model != null;
+				}
+			});
+
+		pool.setMaxActive(config.getMaxPoolSize());
+		pool.setMaxIdle(config.getMaxIdleModels());
+		pool.setTestOnBorrow(true);
+		pool.setWhenExhaustedAction(GenericObjectPool.WHEN_EXHAUSTED_BLOCK);
+
+		return pool;
 	}
 
-	@Override
-	public boolean validateObject(ChatModel model) {
-		// Basic validation - ensure model is not null
-		return model != null;
-	}
+	/**
+	 * Creates a chat model instance for the specified model name.
+	 *
+	 * <p>
+	 * This method is called by the object pool to create new model instances.
+	 * </p>
+	 *
+	 * @param modelName
+	 *        The name of the model to create.
+	 * @return A new chat model instance.
+	 * @throws Exception
+	 *         If the model cannot be created.
+	 */
+	protected abstract ChatModel createModel(String modelName) throws Exception;
 }

@@ -101,14 +101,14 @@ public class AnthropicChatModelFactory extends ChatModelFactory {
 	}
 
 	@Override
-	public ChatModel makeObject() throws Exception {
+	protected ChatModel createModel(String modelName) throws Exception {
 		Config config = getConfig();
 
 		// Create LangChain4j Anthropic chat model
 		AnthropicChatModel.AnthropicChatModelBuilder builder = AnthropicChatModel.builder()
 			.apiKey(config.getApiKey())
 			.baseUrl(config.getBaseUrl())
-			.modelName(config.getModelName());
+			.modelName(modelName);
 
 		// Add optional version if configured
 		String version = config.getVersion();

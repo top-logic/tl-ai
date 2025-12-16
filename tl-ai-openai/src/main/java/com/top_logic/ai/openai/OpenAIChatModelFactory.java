@@ -106,14 +106,14 @@ public class OpenAIChatModelFactory extends ChatModelFactory {
 	}
 
 	@Override
-	public ChatModel makeObject() throws Exception {
+	protected ChatModel createModel(String modelName) throws Exception {
 		Config config = getConfig();
 
 		// Create LangChain4j OpenAI chat model
 		OpenAiChatModel.OpenAiChatModelBuilder builder = OpenAiChatModel.builder()
 			.apiKey(config.getApiKey())
 			.baseUrl(config.getBaseUrl())
-			.modelName(config.getModelName());
+			.modelName(modelName);
 
 		// Add optional organization if configured
 		String organization = config.getOrganization();

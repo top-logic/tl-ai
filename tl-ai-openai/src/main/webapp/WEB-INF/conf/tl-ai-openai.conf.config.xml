@@ -32,37 +32,28 @@
 				default-model="gpt-4o"
 			>
 				<factories>
-					<!-- OpenAI GPT-4o model factory -->
+					<!-- OpenAI models factory -->
 					<factory
 						class="com.top_logic.ai.openai.OpenAIChatModelFactory"
-						model-name="gpt-4o"
+						models="gpt-4o, gpt-4o-mini, gpt-3.5-turbo"
 						api-key="%OPENAI_API_KEY%"
 						base-url="https://api.openai.com/v1"
 						max-pool-size="10"
 						max-idle-models="5"
 					/>
-					<!-- OpenAI GPT-3.5-turbo model factory -->
-					<factory
-						class="com.top_logic.ai.openai.OpenAIChatModelFactory"
-						model-name="gpt-3.5-turbo"
-						api-key="%OPENAI_API_KEY%"
-						base-url="https://api.openai.com/v1"
-						max-pool-size="10"
-						max-idle-models="5"
-					/>
-					<!-- Anthropic Claude 3 Opus model factory -->
+					<!-- Anthropic Claude models factory -->
 					<factory
 						class="com.top_logic.ai.openai.AnthropicChatModelFactory"
-						model-name="claude-3-opus"
+						models="claude-3-5-sonnet-20241022, claude-3-5-haiku-20241022, claude-3-opus-20240229"
 						api-key="%ANTHROPIC_API_KEY%"
 						base-url="https://api.anthropic.com/v1"
 						max-pool-size="10"
 						max-idle-models="5"
 					/>
-					<!-- Mistral Large model factory -->
+					<!-- Mistral AI models factory -->
 					<factory
 						class="com.top_logic.ai.openai.MistralChatModelFactory"
-						model-name="mistral-large-latest"
+						models="mistral-large-latest, mistral-small-latest"
 						api-key="%MISTRAL_API_KEY%"
 						base-url="https://api.mistral.ai/v1"
 						max-pool-size="10"
