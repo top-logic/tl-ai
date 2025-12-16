@@ -11,6 +11,7 @@ import org.apache.commons.pool.ObjectPool;
 
 import com.top_logic.basic.CalledByReflection;
 import com.top_logic.basic.InteractionContext;
+import com.top_logic.basic.Logger;
 import com.top_logic.basic.col.TypedAnnotatable;
 import com.top_logic.basic.col.TypedAnnotatable.Property;
 import com.top_logic.basic.config.DefaultInstantiationContext;
@@ -188,19 +189,20 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 
 			// Ensure at least one factory was successfully configured
 			if (_modelPools.isEmpty()) {
-				throw new RuntimeException(
-					"No valid model factories available. Please check that API keys are properly configured.");
-			}
+				Logger.warn(
+					"No valid model factories available. Please check that API keys are properly configured.",
+					OpenAIService.class);
+			} else {
+				// Set default model
+				_defaultModel = config.getDefaultModel();
+				if (_defaultModel == null || !_modelPools.containsKey(_defaultModel)) {
+					// Use first available model as default
+					_defaultModel = _modelPools.keySet().iterator().next();
 
-			// Set default model
-			_defaultModel = config.getDefaultModel();
-			if (_defaultModel == null || !_modelPools.containsKey(_defaultModel)) {
-				// Use first available model as default
-				_defaultModel = _modelPools.keySet().iterator().next();
+					Logger.info("Selecting default AI model: " + _defaultModel, OpenAIService.class);
+				}
 			}
-
 			context.checkErrors();
-
 		} catch (RuntimeException ex) {
 			throw ex;
 		} catch (Exception ex) {
