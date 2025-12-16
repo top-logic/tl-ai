@@ -214,94 +214,261 @@ public class OpenAIScriptFunctions extends TLScriptFunctions {
 			throw new IllegalArgumentException("JSON schema must contain a 'schema' field.");
 		}
 
-		// The schema is expected to be a JSON schema definition (typically a Map)
-		// LangChain4j's JsonSchema.builder() expects a JsonSchemaElement which can be
-		// constructed from JSON-like structures
-		return JsonSchema.builder()
-			.name(name)
-			.rootElement(JsonObjectSchema.builder()
-				.addProperties(parseSchemaProperties(schema))
-				.build())
-			.build();
-	}
-
-	/**
-	 * Parses schema properties from a map structure.
-	 *
-	 * @param schema
-	 *        The schema object (typically a Map).
-	 * @return A map of property names to their schema elements.
-	 */
-	private static Map<String, JsonSchemaElement> parseSchemaProperties(Object schema) {
-		if (!(schema instanceof Map<?, ?> schemaMap)) {
+		if (!(schema instanceof Map<?, ?> schemaPropsMap)) {
 			throw new IllegalArgumentException("Schema must be a Map.");
 		}
 
-		Map<String, JsonSchemaElement> properties = new java.util.HashMap<>();
+		// Parse the root object schema with properties and required fields
+		JsonObjectSchema.Builder rootBuilder = JsonObjectSchema.builder();
 
-		for (Map.Entry<?, ?> entry : schemaMap.entrySet()) {
-			String propertyName = (String) entry.getKey();
-			Object propertyValue = entry.getValue();
-
-			if (propertyValue instanceof Map<?, ?> propertyMap) {
-				String type = (String) propertyMap.get("type");
-				String description = (String) propertyMap.get("description");
-
-				if (type != null) {
-					switch (type.toLowerCase()) {
-						case "string":
-							properties.put(propertyName,
-								JsonStringSchema.builder()
-									.description(description)
-									.build());
-							break;
-						case "integer":
-							properties.put(propertyName,
-								JsonIntegerSchema.builder()
-									.description(description)
-									.build());
-							break;
-						case "number":
-							properties.put(propertyName,
-								JsonNumberSchema.builder()
-									.description(description)
-									.build());
-							break;
-						case "boolean":
-							properties.put(propertyName,
-								JsonBooleanSchema.builder()
-									.description(description)
-									.build());
-							break;
-						case "array":
-							properties.put(propertyName,
-								JsonArraySchema.builder()
-									.description(description)
-									.build());
-							break;
-						case "object":
-							Object nestedProps = propertyMap.get("properties");
-							if (nestedProps != null) {
-								properties.put(propertyName,
-									JsonObjectSchema.builder()
-										.description(description)
-										.addProperties(parseSchemaProperties(nestedProps))
-										.build());
-							} else {
-								properties.put(propertyName,
-									JsonObjectSchema.builder()
-										.description(description)
-										.build());
-							}
-							break;
-						default:
-							throw new IllegalArgumentException("Unsupported schema type: " + type);
-					}
+		// Get required properties list
+		Object requiredObj = schemaPropsMap.get("required");
+		List<String> requiredProps = new ArrayList<>();
+		if (requiredObj instanceof List<?> reqList) {
+			for (Object item : reqList) {
+				if (item instanceof String str) {
+					requiredProps.add(str);
 				}
 			}
 		}
 
-		return properties;
+		// Parse and add properties
+		Object propertiesObj = schemaPropsMap.get("properties");
+		if (propertiesObj instanceof Map<?, ?> propertiesMap) {
+			addPropertiesToBuilder(rootBuilder, propertiesMap);
+		}
+
+		// Add required properties if any
+		if (!requiredProps.isEmpty()) {
+			rootBuilder.required(requiredProps);
+		}
+
+		return JsonSchema.builder()
+			.name(name)
+			.rootElement(rootBuilder.build())
+			.build();
+	}
+
+	/**
+	 * Adds properties to a {@link JsonObjectSchema.Builder} using individual property methods.
+	 *
+	 * @param builder
+	 *        The builder to add properties to.
+	 * @param propertiesMap
+	 *        The map of property definitions.
+	 */
+	private static void addPropertiesToBuilder(JsonObjectSchema.Builder builder, Map<?, ?> propertiesMap) {
+		for (Map.Entry<?, ?> entry : propertiesMap.entrySet()) {
+			String propertyName = (String) entry.getKey();
+			Object propertyValue = entry.getValue();
+
+			if (propertyValue instanceof Map<?, ?> propertyDef) {
+				addProperty(builder, propertyName, propertyDef);
+			}
+		}
+	}
+
+	/**
+	 * Adds a single property to a {@link JsonObjectSchema.Builder} based on its definition.
+	 *
+	 * @param builder
+	 *        The builder to add the property to.
+	 * @param propertyName
+	 *        The name of the property.
+	 * @param propertyDef
+	 *        The property definition map containing "type", "description", etc.
+	 */
+	@SuppressWarnings("unchecked")
+	private static void addProperty(JsonObjectSchema.Builder builder, String propertyName,
+			Map<?, ?> propertyDef) {
+		String type = (String) propertyDef.get("type");
+		String description = (String) propertyDef.get("description");
+
+		if (type == null) {
+			throw new IllegalArgumentException("Property '" + propertyName + "' must have a 'type' field.");
+		}
+
+		switch (type.toLowerCase()) {
+			case "string":
+				// Check for enum
+				Object enumValues = propertyDef.get("enum");
+				if (enumValues instanceof List<?> enumList) {
+					List<String> enumStrings = new ArrayList<>();
+					for (Object item : enumList) {
+						if (item instanceof String str) {
+							enumStrings.add(str);
+						}
+					}
+					if (description != null) {
+						builder.addEnumProperty(propertyName, enumStrings, description);
+					} else {
+						builder.addEnumProperty(propertyName, enumStrings);
+					}
+				} else {
+					// Regular string property
+					if (description != null) {
+						builder.addStringProperty(propertyName, description);
+					} else {
+						builder.addStringProperty(propertyName);
+					}
+				}
+				break;
+
+			case "integer":
+				if (description != null) {
+					builder.addIntegerProperty(propertyName, description);
+				} else {
+					builder.addIntegerProperty(propertyName);
+				}
+				break;
+
+			case "number":
+				if (description != null) {
+					builder.addNumberProperty(propertyName, description);
+				} else {
+					builder.addNumberProperty(propertyName);
+				}
+				break;
+
+			case "boolean":
+				if (description != null) {
+					builder.addBooleanProperty(propertyName, description);
+				} else {
+					builder.addBooleanProperty(propertyName);
+				}
+				break;
+
+			case "array":
+				// Build array schema with optional items type
+				JsonArraySchema.Builder arrayBuilder = JsonArraySchema.builder();
+				if (description != null) {
+					arrayBuilder.description(description);
+				}
+
+				Object itemsObj = propertyDef.get("items");
+				if (itemsObj instanceof Map<?, ?> itemsDef) {
+					arrayBuilder.items(parseSchemaElement(itemsDef));
+				}
+
+				builder.addProperty(propertyName, arrayBuilder.build());
+				break;
+
+			case "object":
+				// Build nested object schema
+				JsonObjectSchema.Builder objectBuilder = JsonObjectSchema.builder();
+				if (description != null) {
+					objectBuilder.description(description);
+				}
+
+				// Get nested properties
+				Object nestedProps = propertyDef.get("properties");
+				if (nestedProps instanceof Map<?, ?> nestedPropsMap) {
+					addPropertiesToBuilder(objectBuilder, nestedPropsMap);
+				}
+
+				// Get nested required properties
+				Object nestedRequired = propertyDef.get("required");
+				if (nestedRequired instanceof List<?> reqList) {
+					List<String> requiredProps = new ArrayList<>();
+					for (Object item : reqList) {
+						if (item instanceof String str) {
+							requiredProps.add(str);
+						}
+					}
+					if (!requiredProps.isEmpty()) {
+						objectBuilder.required(requiredProps);
+					}
+				}
+
+				builder.addProperty(propertyName, objectBuilder.build());
+				break;
+
+			default:
+				throw new IllegalArgumentException("Unsupported property type: " + type);
+		}
+	}
+
+	/**
+	 * Parses a schema element definition into a {@link JsonSchemaElement}.
+	 *
+	 * @param elementDef
+	 *        The element definition map.
+	 * @return The parsed schema element.
+	 */
+	private static JsonSchemaElement parseSchemaElement(Map<?, ?> elementDef) {
+		String type = (String) elementDef.get("type");
+		String description = (String) elementDef.get("description");
+
+		if (type == null) {
+			throw new IllegalArgumentException("Schema element must have a 'type' field.");
+		}
+
+		switch (type.toLowerCase()) {
+			case "string":
+				JsonStringSchema.Builder stringBuilder = JsonStringSchema.builder();
+				if (description != null) {
+					stringBuilder.description(description);
+				}
+				return stringBuilder.build();
+
+			case "integer":
+				JsonIntegerSchema.Builder intBuilder = JsonIntegerSchema.builder();
+				if (description != null) {
+					intBuilder.description(description);
+				}
+				return intBuilder.build();
+
+			case "number":
+				JsonNumberSchema.Builder numBuilder = JsonNumberSchema.builder();
+				if (description != null) {
+					numBuilder.description(description);
+				}
+				return numBuilder.build();
+
+			case "boolean":
+				JsonBooleanSchema.Builder boolBuilder = JsonBooleanSchema.builder();
+				if (description != null) {
+					boolBuilder.description(description);
+				}
+				return boolBuilder.build();
+
+			case "array":
+				JsonArraySchema.Builder arrayBuilder = JsonArraySchema.builder();
+				if (description != null) {
+					arrayBuilder.description(description);
+				}
+				Object itemsObj = elementDef.get("items");
+				if (itemsObj instanceof Map<?, ?> itemsDef) {
+					arrayBuilder.items(parseSchemaElement(itemsDef));
+				}
+				return arrayBuilder.build();
+
+			case "object":
+				JsonObjectSchema.Builder objectBuilder = JsonObjectSchema.builder();
+				if (description != null) {
+					objectBuilder.description(description);
+				}
+				Object nestedProps = elementDef.get("properties");
+				if (nestedProps instanceof Map<?, ?> nestedPropsMap) {
+					addPropertiesToBuilder(objectBuilder, nestedPropsMap);
+				}
+				Object nestedRequired = elementDef.get("required");
+				if (nestedRequired instanceof List<?> reqList) {
+					List<String> requiredProps = new ArrayList<>();
+					for (Object item : reqList) {
+						if (item instanceof String str) {
+							requiredProps.add(str);
+						}
+					}
+					if (!requiredProps.isEmpty()) {
+						objectBuilder.required(requiredProps);
+					}
+				}
+				return objectBuilder.build();
+
+			default:
+				throw new IllegalArgumentException("Unsupported element type: " + type);
+		}
 	}
 
 	/**
