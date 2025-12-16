@@ -22,19 +22,18 @@
 			<artifactId>tl-contact</artifactId>
 		</dependency>
 
-		<!-- OpenAI SDK -->
-		<dependency>
-			<groupId>com.openai</groupId>
-			<artifactId>openai-java</artifactId>
-			<version>4.11.0</version>
-		</dependency>
-
-
-	<!-- Apache Commons Pool for client pooling -->
+	<!-- LangChain4j for AI integration -->
 	<dependency>
-		<groupId>commons-pool</groupId>
-		<artifactId>commons-pool</artifactId>
-		<version>1.6</version>
+		<groupId>dev.langchain4j</groupId>
+		<artifactId>langchain4j</artifactId>
+		<version>1.9.1</version>
+	</dependency>
+
+	<!-- LangChain4j OpenAI integration -->
+	<dependency>
+		<groupId>dev.langchain4j</groupId>
+		<artifactId>langchain4j-open-ai</artifactId>
+		<version>1.9.1</version>
 	</dependency>
 		<!-- Tests -->
 		<dependency>

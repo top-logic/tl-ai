@@ -31,8 +31,7 @@
 			<instance class="com.top_logic.ai.openai.OpenAIService"
 				api-key="%OPENAI_API_KEY%"
 				base-url="https://api.openai.com/v1"
-				max-pool-size="10"
-				max-idle-clients="5"
+				model-name="gpt-4o"
 			/>
 		</config>
 	</services>

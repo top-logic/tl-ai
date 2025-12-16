@@ -9,23 +9,20 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
-import com.openai.client.OpenAIClient;
-import com.openai.models.ChatModel;
-import com.openai.models.chat.completions.ChatCompletion;
-import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam;
-import com.openai.models.chat.completions.ChatCompletionContentPart;
-import com.openai.models.chat.completions.ChatCompletionContentPartImage;
-import com.openai.models.chat.completions.ChatCompletionContentPartText;
-import com.openai.models.chat.completions.ChatCompletionCreateParams;
-import com.openai.models.chat.completions.ChatCompletionMessageParam;
-import com.openai.models.chat.completions.ChatCompletionSystemMessageParam;
-import com.openai.models.chat.completions.ChatCompletionUserMessageParam;
-
 import com.top_logic.ai.openai.OpenAIService;
 import com.top_logic.basic.io.StreamUtilities;
 import com.top_logic.basic.io.binary.BinaryDataSource;
 import com.top_logic.model.search.expr.config.operations.ScriptPrefix;
 import com.top_logic.model.search.expr.config.operations.TLScriptFunctions;
+
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.ImageContent;
+import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.TextContent;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.response.ChatResponse;
 
 /**
  * TL-Script functions for interacting with OpenAI API.
@@ -67,9 +64,9 @@ public class OpenAIScriptFunctions extends TLScriptFunctions {
 	 * @return The assistant's response text.
 	 */
 	public static String chat(List<Object> messages, String model) {
-		OpenAIClient client = OpenAIService.getInstance().getClient();
+		ChatModel chatModel = OpenAIService.getInstance().getChatModel();
 
-		ChatCompletionCreateParams.Builder builder = ChatCompletionCreateParams.builder();
+		List<ChatMessage> chatMessages = new ArrayList<>();
 
 		for (Object message : messages) {
 			if (message instanceof Map<?, ?> map) {
@@ -78,33 +75,24 @@ public class OpenAIScriptFunctions extends TLScriptFunctions {
 
 				switch (role.toLowerCase()) {
 					case "system":
-						builder.addMessage(
-							ChatCompletionSystemMessageParam.builder()
-								.content(ChatCompletionSystemMessageParam.Content.ofText(toString(content)))
-								.build());
+						chatMessages.add(new SystemMessage(toString(content)));
 						break;
 					case "user":
-						builder.addMessage(createUserMessage(content));
+						chatMessages.add(createUserMessage(content));
 						break;
 					case "assistant":
-						builder.addMessage(
-							ChatCompletionAssistantMessageParam.builder()
-								.content(ChatCompletionAssistantMessageParam.Content.ofText(toString(content)))
-								.build());
+						chatMessages.add(new AiMessage(toString(content)));
 						break;
 					default:
 						throw new IllegalArgumentException("Unknown role: " + role + ". Must be 'system', 'user', or 'assistant'.");
 				}
 			} else {
-				builder.addMessage(createUserMessage(message));
+				chatMessages.add(createUserMessage(message));
 			}
 		}
 
-		ChatCompletionCreateParams params = builder.model(ChatModel.of(model))
-			.build();
-
-		ChatCompletion completion = client.chat().completions().create(params);
-		return completion.choices().get(0).message().content().orElse("");
+		ChatResponse response = chatModel.chat(chatMessages);
+		return response.aiMessage().text();
 	}
 
 	/**
@@ -112,58 +100,39 @@ public class OpenAIScriptFunctions extends TLScriptFunctions {
 	 *
 	 * @param content
 	 *        The content - can be String, binary data, or a list of mixed content.
-	 * @return The chat completion message parameter.
+	 * @return The user message.
 	 */
-	private static ChatCompletionMessageParam createUserMessage(Object content) {
-		ChatCompletionUserMessageParam message;
-
+	private static UserMessage createUserMessage(Object content) {
 		if (content instanceof String text) {
-			message = ChatCompletionUserMessageParam.builder()
-				.content(ChatCompletionUserMessageParam.Content.ofText(text))
-				.build();
+			return new UserMessage(text);
 		} else if (content instanceof BinaryDataSource binary) {
-			message = ChatCompletionUserMessageParam.builder()
-				.content(ChatCompletionUserMessageParam.Content.ofArrayOfContentParts(
-					List.of(createImagePart(binary))))
-				.build();
+			return UserMessage.from(createImageContent(binary));
 		} else if (content instanceof List<?> list) {
 			// Mixed content: text and images
-			List<ChatCompletionContentPart> parts = new ArrayList<>();
+			List<dev.langchain4j.data.message.Content> contents = new ArrayList<>();
 			for (Object item : list) {
 				if (item instanceof String text) {
-					parts.add(ChatCompletionContentPart.ofText(
-						ChatCompletionContentPartText.builder()
-							.text(text)
-							.build()));
+					contents.add(new TextContent(text));
 				} else if (item instanceof BinaryDataSource binary) {
-					parts.add(createImagePart(binary));
+					contents.add(createImageContent(binary));
 				} else {
-					parts.add(ChatCompletionContentPart.ofText(
-						ChatCompletionContentPartText.builder()
-							.text(toString(item))
-							.build()));
+					contents.add(new TextContent(toString(item)));
 				}
 			}
-			message = ChatCompletionUserMessageParam.builder()
-				.content(ChatCompletionUserMessageParam.Content.ofArrayOfContentParts(parts))
-				.build();
+			return UserMessage.from(contents);
 		} else {
-			message = ChatCompletionUserMessageParam.builder()
-				.content(ChatCompletionUserMessageParam.Content.ofText(toString(content)))
-				.build();
+			return new UserMessage(toString(content));
 		}
-
-		return ChatCompletionMessageParam.ofUser(message);
 	}
 
 	/**
-	 * Creates an image content part from a {@link BinaryDataSource}.
+	 * Creates an image content from a {@link BinaryDataSource}.
 	 *
 	 * @param binary
 	 *        The binary data (image or document).
-	 * @return The image content part.
+	 * @return The image content.
 	 */
-	private static ChatCompletionContentPart createImagePart(BinaryDataSource binary) {
+	private static ImageContent createImageContent(BinaryDataSource binary) {
 		try {
 			// Read binary data and encode as base64
 			byte[] bytes = StreamUtilities.readStreamContents(binary);
@@ -172,13 +141,7 @@ public class OpenAIScriptFunctions extends TLScriptFunctions {
 			String contentType = binary.getContentType();
 			String dataUrl = "data:" + contentType + ";base64," + base64;
 
-			ChatCompletionContentPartImage imagePart = ChatCompletionContentPartImage.builder()
-				.imageUrl(ChatCompletionContentPartImage.ImageUrl.builder()
-					.url(dataUrl)
-					.build())
-				.build();
-
-			return ChatCompletionContentPart.ofImageUrl(imagePart);
+			return new ImageContent(dataUrl);
 		} catch (IOException ex) {
 			throw new RuntimeException("Failed to read binary data: " + ex.getMessage(), ex);
 		}
