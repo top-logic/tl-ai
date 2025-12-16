@@ -29,7 +29,7 @@
     result = aiChat(
         [{
             "role": "system", 
-            "content": "Take the image provided by the user and return a JSON object with the properties 'description', 'date', 'amount' filled with the values from the given invoice. Use image recognition to analyze the document, if no text data is available. Generate text in {0}.".fill(
+            "content": "Take the image provided by the user and return a JSON object with the properties 'description', 'date', 'amount' filled with the values from the given invoice. Use image recognition to analyze the document, if no text data is available. Generate text in language {0}.".fill(
                 currentUser().get(`tl.accounts:Person#locale`))
         }, 
         {
@@ -42,17 +42,19 @@
                 "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["description", "value", "date"],
                 "properties": {
                     "description": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "What has been bought?"
                     },
                     "value": {
-                        "type": "number"
+                        "type": "number",
+                        "description": "How much was payed?"
                     },
                     "date": {
                         "type": "string",
-                        "format": "date"
+                        "format": "date",
+                        "description": "When was the purchase made, use dd.MM.yyyy as date format."
                     }
                 }
             }
