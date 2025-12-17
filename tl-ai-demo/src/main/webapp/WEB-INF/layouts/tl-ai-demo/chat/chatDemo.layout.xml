@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<include name="templates/contentTab.xml"
+	z_legacy_componentName="chatDemo"
+	z_legacy_tabLabel="layoutdemo.test.demoChat.tabber"
+>
+	<components>
+		<include name="tl-ai-demo/chat/demoChat.xml"/>
+	</components>
+</include>
