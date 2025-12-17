@@ -45,7 +45,6 @@
 				<executions>
 					<execution>
 						<id>generate-binding</id>
-						<phase>generate-sources</phase>
 						<goals>
 							<goal>generate-java</goal>
 						</goals>
