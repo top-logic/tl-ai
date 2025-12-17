@@ -10,9 +10,5 @@
 			test-layouts-normalized="true"
 			test-jsp-content="true"
 		/>
-		
-		<config config:interface="test.com.top_logic.basic.TestComment$Config">
-			<copyright-pattern>\W*Copyright \([c,C]\) (\d\d\d\d(?:\s?-\s?\d\d\d\d)?) \QBusiness Operation Systems GmbH\E\. All Rights Reserved</copyright-pattern>
-		</config>
 	</configs>
 </application>
