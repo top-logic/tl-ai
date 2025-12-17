@@ -41,11 +41,11 @@ import dev.langchain4j.model.chat.request.ResponseFormatType;
 import dev.langchain4j.model.chat.response.ChatResponse;
 
 /**
- * TL-Script functions for interacting with OpenAI API.
+ * TL-Script functions for interacting with large language models.
  *
  * <p>
- * This class provides functional-style access to OpenAI chat completions from TL-Script. All
- * functions automatically manage client pooling and thread context binding.
+ * This class provides functional-style access to chat completions from TL-Script. All functions
+ * automatically manage client pooling and thread context binding.
  * </p>
  *
  * <p>

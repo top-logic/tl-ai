@@ -33,7 +33,8 @@ import com.top_logic.basic.thread.UnboundListener;
 import dev.langchain4j.model.chat.ChatModel;
 
 /**
- * TopLogic service that provides access to AI models via LangChain4j with thread-safe client pooling.
+ * TopLogic service that provides access to AI models via <i>LangChain4j</i> with thread-safe client
+ * pooling.
  *
  * <p>
  * This service manages multiple {@link ChatModelFactory} instances, each configured for a specific
@@ -41,10 +42,8 @@ import dev.langchain4j.model.chat.ChatModel;
  * then returned to the pool when the context is destroyed.
  * </p>
  *
- * <p>
- * The service provides a singleton instance that can be accessed via {@link #getInstance()} and
- * returns a {@link ChatModel} bound to the current thread context via {@link #getChatModel(String)}.
- * </p>
+ * @see #getInstance()
+ * @see #getChatModel()
  */
 public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?>> {
 
@@ -124,7 +123,7 @@ public class OpenAIService extends ConfiguredManagedClass<OpenAIService.Config<?
 	}
 
 	/**
-	 * Returns the singleton instance of the OpenAI service.
+	 * Returns the singleton instance of the {@link OpenAIService}.
 	 *
 	 * @return The service instance, or {@code null} if not yet started.
 	 */

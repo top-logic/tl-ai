@@ -19,12 +19,12 @@ import dev.langchain4j.model.chat.request.json.JsonSchemaElement;
 import dev.langchain4j.model.chat.request.json.JsonStringSchema;
 
 /**
- * Utility class for converting map-based schema definitions to LangChain4j JSON schemas.
+ * Utility class for converting map-based schema definitions to <i>LangChain4j</i> JSON schemas.
  *
  * <p>
- * Converts TL-Script map structures into strongly-typed LangChain4j JSON schema objects.
- * Supports all JSON schema primitive types (string, integer, number, boolean), complex
- * types (array, object), enum values, and required property specifications.
+ * Converts TL-Script map structures into strongly-typed <i>LangChain4j</i> JSON schema objects.
+ * Supports all JSON schema primitive types (string, integer, number, boolean), complex types
+ * (array, object), enum values, and required property specifications.
  * </p>
  */
 public class JsonSchemaConverter {

@@ -76,7 +76,8 @@ public class AnthropicChatModelFactory extends ChatModelFactory {
 		 * The API version to use.
 		 *
 		 * <p>
-		 * Optional. Anthropic uses versioned APIs. If not specified, the LangChain4j default is used.
+		 * Optional. Anthropic uses versioned APIs. If not specified, the <i>LangChain4j</i> default
+		 * is used.
 		 * </p>
 		 */
 		@Name(VERSION)

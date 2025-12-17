@@ -19,11 +19,11 @@ import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 
 /**
- * Factory for creating OpenAI chat model instances.
+ * Factory for creating <i>OpenAI</i> chat model instances.
  *
  * <p>
- * This factory creates {@link ChatModel} instances using the OpenAI API
- * (or compatible APIs like Azure OpenAI).
+ * This factory creates {@link ChatModel} instances using the <i>OpenAI</i> API (or compatible APIs
+ * like Azure <i>OpenAI</i>).
  * </p>
  */
 public class OpenAIChatModelFactory extends ChatModelFactory {
@@ -55,21 +55,21 @@ public class OpenAIChatModelFactory extends ChatModelFactory {
 		String ORGANIZATION = "organization";
 
 		/**
-		 * The OpenAI API key for authentication.
+		 * The <i>OpenAI</i> API key for authentication.
 		 */
 		@Name(API_KEY)
 		@Encrypted
 		String getApiKey();
 
 		/**
-		 * The base URL for the OpenAI API.
+		 * The base URL for the <i>OpenAI</i> API.
 		 *
 		 * <p>
 		 * Default: https://api.openai.com/v1
 		 * </p>
 		 * <p>
-		 * You can override this to use a different endpoint, such as an Azure OpenAI deployment
-		 * or a local proxy server.
+		 * You can override this to use a different endpoint, such as an Azure <i>OpenAI</i>
+		 * deployment or a local proxy server.
 		 * </p>
 		 */
 		@Name(BASE_URL)
@@ -77,7 +77,7 @@ public class OpenAIChatModelFactory extends ChatModelFactory {
 		String getBaseUrl();
 
 		/**
-		 * The OpenAI organization ID.
+		 * The <i>OpenAI</i> organization ID.
 		 *
 		 * <p>
 		 * Optional. For users who belong to multiple organizations, you can specify which

@@ -27,7 +27,7 @@ import dev.langchain4j.model.chat.ChatModel;
  * Abstract factory for creating and managing pooled {@link ChatModel} instances.
  *
  * <p>
- * This factory creates object pools for LangChain4j chat model instances. Each factory is
+ * This factory creates object pools for <i>LangChain4j</i> chat model instances. Each factory is
  * configured for a specific AI provider and can create pools for multiple models from that
  * provider.
  * </p>
@@ -73,11 +73,12 @@ public abstract class ChatModelFactory implements ConfiguredInstance<ChatModelFa
 		 * The model names (e.g., "gpt-4o, gpt-3.5-turbo" or "claude-3-opus, claude-3-sonnet").
 		 *
 		 * <p>
-		 * This is a comma-separated list of model names. Each model name serves as a unique
-		 * identifier and determines which models can be requested via
-		 * {@link OpenAIService#getChatModel(String)}. All listed models will use the same
-		 * API credentials from this factory.
+		 * Comma-separated list of model names. Each model name serves as a unique identifier and
+		 * determines which models can be requested. All listed models will use the same API
+		 * credentials from this factory.
 		 * </p>
+		 * 
+		 * @see OpenAIService#getChatModel(String)
 		 */
 		@Name(MODELS)
 		@Format(CommaSeparatedStrings.class)
